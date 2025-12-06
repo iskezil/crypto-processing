@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Фон -->
+  <circle cx="256" cy="256" r="256" fill="#627EEA"/>
+
+  <!-- Логотип ETH -->
+  <g fill="#FFFFFF" fill-rule="nonzero">
+    <path
+      d="M263.968 64
+         V206.0
+         L383.92 259.6
+         Z"
+      fill-opacity="0.602"
+    />
+
+    <path
+      d="M263.968 64
+         L144 259.52
+         L263.968 206.0
+         Z"
+    />
+
+    <path
+      d="M263.968 351.488
+         V447.92
+         L384 281.856
+         Z"
+      fill-opacity="0.602"
+    />
+
+    <path
+      d="M263.968 447.92
+         V351.488
+         L144 281.856
+         Z"
+    />
+
+    <path
+      d="M263.968 329.168
+         L383.92 259.52
+         L263.968 206.0
+         Z"
+      fill-opacity="0.2"
+    />
+
+    <path
+      d="M144 259.52
+         L263.968 329.168
+         V206.0
+         Z"
+      fill-opacity="0.602"
+    />
+  </g>
+</svg>
