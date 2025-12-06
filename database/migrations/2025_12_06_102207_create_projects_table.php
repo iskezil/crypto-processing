@@ -17,9 +17,13 @@ return new class extends Migration {
       $table->unsignedBigInteger('user_id')->comment('ID владельца проекта (users.id)');
       $table->string('name', 255)->comment('Название проекта / магазина');
       $table->string('activity_type', 255)->nullable()->comment('Вид деятельности (описание бизнеса)');
+      $table->decimal('auto_confirm_partial_by_amount', 18, 6)->nullable()->comment('Автоподтверждение частично оплаченных счетов по сумме');
+      $table->decimal('auto_confirm_partial_by_percent', 18, 6)->nullable()->comment('Автоподтверждение частично оплаченных счетов по проценту');
       $table->text('description')->nullable()->comment('Описание проекта');
       $table->string('platform', 50)->nullable()->comment("Тип платформы: web, telegram_bot, vk_bot и т.п.");
       $table->string('project_url', 1024)->nullable()->comment('Ссылка на сайт/бот/продукт проекта');
+      $table->string('side_commission', 10)->default('client')->comment('Кто оплачивает трансферную комиссию: client или merchant');
+      $table->string('side_commission_cc', 10)->default('client')->comment('Кто оплачивает сервисную комиссию: client или merchant');
       $table->string('success_url', 1024)->nullable()->comment('URL успешной оплаты (редирект клиента)');
       $table->string('fail_url', 1024)->nullable()->comment('URL неуспешной оплаты (редирект клиента)');
       $table->string('notify_url', 1024)->nullable()->comment('Webhook URL для уведомлений о статусах платежей');
