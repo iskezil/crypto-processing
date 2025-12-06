@@ -28,7 +28,7 @@ class PermissionsSeeder extends Seeder
 
         foreach ($modules as $module) {
             foreach ($actions as $action) {
-                $permissionName = $module . '_' . $action; // e.g., USERS_VIEW
+                $permissionName = $module . '_' . $action;
                 $permission = Permission::firstOrCreate(
                     ['name' => $permissionName, 'guard_name' => 'web'],
                     ['module' => $module]
