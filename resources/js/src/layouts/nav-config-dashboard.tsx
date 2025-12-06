@@ -65,6 +65,20 @@ export function useNavData(): NavSectionProps['data'] {
             icon: ICONS.dashboard,
             info: <Label>v{CONFIG.appVersion}</Label>,
           },
+          {
+            title: __('navigation.overview.projects'),
+            path: paths.dashboard.root,
+            icon: ICONS.banking,
+            anyOf: ['PROJECTS_VIEW', 'PROJECTS_CREATE'],
+            children: [
+              {
+                title: __('navigation.management.roles'),
+                path: paths.dashboard.root,
+                permission: 'ROLES_VIEW',
+                deepMatch: true,
+              }
+            ],
+          },
         ],
       },
       {
@@ -94,6 +108,19 @@ export function useNavData(): NavSectionProps['data'] {
                 permission: 'PERMISSIONS_VIEW',
               },
             ],
+          },
+          {
+            title: __('navigation.management.projects'),
+            path: paths.dashboard.root,
+            icon: ICONS.kanban,
+            anyOf: ['PROJECTS_MODERATION_VIEW'],
+            // children: [
+            //   {
+            //     title: __('navigation.management.projects_moderation'),
+            //     path: route('projects_moderation.index'),
+            //     permission: 'PROJECTS_MODERATION_VIEW',
+            //   }
+            // ],
           },
         ],
       },

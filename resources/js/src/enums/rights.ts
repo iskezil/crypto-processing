@@ -4,7 +4,6 @@ export enum ROLE_NAMES {
   USER = 'pages/roles.names.user',
 }
 
-// Permission value is i18n key; enum key equals DB permission name (UPPERCASE)
 export enum PERMISSION_NAMES {
   USERS_VIEW = 'pages/permissions.names.users_view',
   USERS_CREATE = 'pages/permissions.names.users_create',
@@ -20,10 +19,22 @@ export enum PERMISSION_NAMES {
   PERMISSIONS_CREATE = 'pages/permissions.names.permissions_create',
   PERMISSIONS_EDIT = 'pages/permissions.names.permissions_edit',
   PERMISSIONS_DELETE = 'pages/permissions.names.permissions_delete',
+
+  PROJECTS_VIEW = 'pages/permissions.names.projects_view',
+  PROJECTS_CREATE = 'pages/permissions.names.projects_create',
+  PROJECTS_EDIT = 'pages/permissions.names.projects_edit',
+  PROJECTS_DELETE = 'pages/permissions.names.projects_delete',
+
+  PROJECTS_MODERATION_VIEW = 'pages/permissions.names.projects_moderation_view',
+  PROJECTS_MODERATION_EDIT = 'pages/permissions.names.projects_moderation_edit',
+  PROJECTS_MODERATION_DELETE = 'pages/permissions.names.projects_moderation_delete',
+
 }
 
 export enum PERMISSION_MODULE_NAMES {
   USERS = 'pages/permissions.modules.users',
   ROLES = 'pages/permissions.modules.roles',
   PERMISSIONS = 'pages/permissions.modules.permissions',
+  PROJECTS = 'pages/permissions.modules.projects',
+  PROJECTS_MODERATION = 'pages/permissions.modules.projects_moderation',
 }

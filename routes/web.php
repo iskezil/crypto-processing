@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Core\LocalisationsController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\Project\ProjectAdminController;
+use App\Http\Controllers\Project\ProjectUserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +67,14 @@ Route::middleware('auth')->group(function () {
   Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])
     ->middleware('permission:PERMISSIONS_DELETE')
     ->name('permissions.destroy');
+
+  Route::get('/projects', [ProjectUserController::class, 'index'])
+    ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation'])
+    ->name('projects.index');
+
+  Route::get('/admin/projects', [ProjectAdminController::class, 'index'])
+    ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation'])
+    ->name('projects_moderation.index');
 });
 
 

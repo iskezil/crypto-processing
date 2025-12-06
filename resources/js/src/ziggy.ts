@@ -19,6 +19,9 @@ export const Ziggy = {
     'permissions.store': { uri: 'permissions' },
     'permissions.update': { uri: 'permissions/{permission}' },
     'permissions.destroy': { uri: 'permissions/{permission}' },
+    'projects.index': { uri: 'projects' },
+    'projects_moderation.index': { uri: 'admin/projects' },
+
     login: { uri: 'login' },
     register: { uri: 'register' },
     'password.request': { uri: 'forgot-password' },

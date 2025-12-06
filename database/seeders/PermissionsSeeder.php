@@ -20,7 +20,7 @@ class PermissionsSeeder extends Seeder
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
 
-        $modules = ['USERS', 'ROLES','PERMISSIONS'];
+        $modules = ['USERS', 'ROLES','PERMISSIONS', 'PROJECTS', 'PROJECTS_MODERATION'];
 
         $actions = ['VIEW', 'CREATE', 'EDIT', 'DELETE'];
 

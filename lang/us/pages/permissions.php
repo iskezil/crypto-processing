@@ -39,10 +39,21 @@ return [
         'permissions_create' => 'Permissions — create',
         'permissions_edit' => 'Permissions — edit',
         'permissions_delete' => 'Permissions — delete',
+
+        'projects_view' => 'My Projects — View',
+        'projects_create' => 'My Projects — Create',
+        'projects_edit' => 'My Projects — Edit',
+        'projects_delete' => 'My Projects — Delete',
+
+        'projects_moderation_view' => 'Project Moderation — View',
+        'projects_moderation_edit' => 'Project Moderation — Edit',
+        'projects_moderation_delete' => 'Project Moderation — Delete',
     ],
     'modules' => [
         'users' => 'Users',
         'roles' => 'Roles',
         'permissions' => 'Permissions',
+        'projects' => 'My Projects',
+        'projects_moderation' => 'Project Moderation',
     ],
 ];

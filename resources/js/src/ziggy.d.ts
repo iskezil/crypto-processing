@@ -69,6 +69,8 @@ declare module 'ziggy-js' {
             "binding": "id"
         }
     ],
+    "projects.index": [],
+    "projects_moderation.index": [],
     "register": [],
     "login": [],
     "password.request": [],

@@ -39,10 +39,23 @@ return [
         'permissions_create' => 'Разрешения — создание',
         'permissions_edit' => 'Разрешения — редактирование',
         'permissions_delete' => 'Разрешения — удаление',
+
+        'projects_view' => 'Мои проекты — просмотр',
+        'projects_create' => 'Мои проекты — создание',
+        'projects_edit' => 'Мои проекты — редактирование',
+        'projects_delete' => 'Мои проекты — удаление',
+
+        'projects_moderation_view' => 'Модерация проектов — просмотр',
+        'projects_moderation_edit' => 'Модерация проектов — редактирование',
+        'projects_moderation_delete' => 'Модерация проектов — удаление',
+
+
     ],
     'modules' => [
       'users' => 'Пользователи',
       'roles' => 'Роли',
       'permissions' => 'Разрешения',
+      'projects' => 'Мои проекты',
+      'projects_moderation' => 'Модерация проектов',
     ],
 ];
