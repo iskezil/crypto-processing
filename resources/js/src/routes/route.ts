@@ -1,27 +1,47 @@
+import {
+  route as ziggyRoute,
+  type Config as ZiggyConfig,
+} from 'ziggy-js';
 import { Ziggy, type RouteName } from 'src/ziggy';
+
+const resolveZiggyConfig = (): ZiggyConfig => {
+  if (
+    typeof window !== 'undefined' &&
+    (window as typeof window & { Ziggy?: ZiggyConfig }).Ziggy
+  ) {
+    const runtimeZiggy = (window as typeof window & { Ziggy?: ZiggyConfig }).Ziggy!;
+
+    return {
+      ...Ziggy,
+      ...runtimeZiggy,
+      routes: { ...Ziggy.routes, ...runtimeZiggy.routes },
+    };
+  }
+
+  return Ziggy;
+};
+
+type RouteParamsInput =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, any>
+  | Array<string | number | boolean | null | undefined>;
 
 export function route(
   name: RouteName,
-  params?: Record<string, any> | string | number,
-  absolute = true
-) {
-  let uri: string = Ziggy.routes[name].uri;
+  params?: RouteParamsInput,
+  absolute = true,
+): string {
+  const config = resolveZiggyConfig();
 
-  if (params) {
-    const parameters: Record<string, any> =
-      typeof params === 'string' || typeof params === 'number'
-        ? (() => {
-            const key = uri.match(/\{([^}]+)\}/)?.[1];
-            return key ? { [key]: params } : {};
-          })()
-        : params;
-
-    Object.keys(parameters).forEach((key) => {
-      uri = uri.replace(`{${key}}`, encodeURIComponent(String(parameters[key])));
-    });
+  if (!config.routes[name]) {
+    console.warn(`Route [${name}] is not defined in Ziggy configuration`, { params });
+    return '#';
   }
-
-  return `/${uri}`;
+  return ziggyRoute(name as any, params as any, absolute, config as any) as unknown as string;
 }
 
 export default route;
