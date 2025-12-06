@@ -17,6 +17,9 @@ export const paths = {
   dashboard: {
     root: ROOTS.DASHBOARD,
     projects: '/projects',
-    projects_moderation: '/admin/projects',
+    projects_moderation: '/admin/projects/moderation',
+  },
+  projects: {
+    create: '/projects/create',
   },
 };

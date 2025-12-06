@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use App\Models\Project;
 use Inertia\Middleware;
 
 class   HandleInertiaRequests extends Middleware
@@ -42,6 +43,17 @@ class   HandleInertiaRequests extends Middleware
           ] : null,
         ],
         'locale' => fn () =>  App::currentLocale(),
+        'projectsMenu' => function () use ($request) {
+          if (!$request->user() || !$request->user()->can('PROJECTS_VIEW')) {
+            return [];
+          }
+
+          return Project::query()
+            ->where('user_id', $request->user()->id)
+            ->where('is_archived', false)
+            ->orderBy('name')
+            ->get(['id', 'ulid', 'name', 'status']);
+        },
         'csrf_token' => csrf_token(),
       ]);
 

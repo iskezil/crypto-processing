@@ -17,7 +17,6 @@ class TokenNetwork extends Model
       'contract_address',
       'stable_coin',
       'full_code',
-      'icon_network',
       'explorer_tx_url',
       'explorer_addr_url',
       'active',

@@ -69,11 +69,23 @@ Route::middleware('auth')->group(function () {
     ->name('permissions.destroy');
 
   Route::get('/projects', [ProjectUserController::class, 'index'])
-    ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation'])
+    ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects.index');
 
-  Route::get('/admin/projects', [ProjectAdminController::class, 'index'])
-    ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation'])
+  Route::get('/projects/create', [ProjectUserController::class, 'create'])
+    ->middleware(['permission:PROJECTS_CREATE', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects.create');
+
+  Route::post('/projects', [ProjectUserController::class, 'store'])
+    ->middleware('permission:PROJECTS_CREATE')
+    ->name('projects.store');
+
+  Route::get('/projects/{project:ulid}', [ProjectUserController::class, 'show'])
+    ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects.show');
+
+  Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
+    ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_moderation.index');
 });
 
