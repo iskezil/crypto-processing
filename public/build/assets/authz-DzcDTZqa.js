@@ -1,0 +1,1 @@
+import{q as p}from"./app-CD6cBdKM.js";function y(){var u,a,i,l;const{props:o}=p(),e=((a=(u=o.auth)==null?void 0:u.user)==null?void 0:a.roles)??[],t=((l=(i=o.auth)==null?void 0:i.user)==null?void 0:l.permissions)??[],c=s=>e.includes(s),m=s=>s.some(n=>c(n)),r=s=>t.includes(s);return{roles:e,permissions:t,hasRole:c,hasAnyRole:m,can:r,canAny:s=>s.some(n=>r(n))}}export{y as u};

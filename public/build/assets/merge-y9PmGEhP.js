@@ -1,0 +1,1 @@
+import{bM as c}from"./app-CD6cBdKM.js";function r(s,o){const l=Object.keys(o);for(let f=0;f<l.length;f++){const i=l[f],e=o[i],n=s[i];Array.isArray(e)?Array.isArray(n)?s[i]=r(n,e):s[i]=r([],e):c(e)?c(n)?s[i]=r(n,e):s[i]=r({},e):(n===void 0||e!==void 0)&&(s[i]=e)}return s}export{r as m};
