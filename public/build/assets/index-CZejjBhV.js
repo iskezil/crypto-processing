@@ -1,1 +1,0 @@
-import{j as e,C as r}from"./app-CD6cBdKM.js";function i(){return e.jsxs(e.Fragment,{children:[e.jsx("title",{children:`View User | Dashboard - ${r.appName}`}),e.jsx("div",{children:"TODO: Implement user view page"})]})}export{i as default};

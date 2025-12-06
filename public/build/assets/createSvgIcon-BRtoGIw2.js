@@ -1,1 +1,0 @@
-import{aC as r,r as t,j as m}from"./app-CD6cBdKM.js";function c(a,i){function e(o,n){return m.jsx(r,{"data-testid":void 0,ref:n,...o,children:a})}return e.muiName=r.muiName,t.memo(t.forwardRef(e))}export{c};

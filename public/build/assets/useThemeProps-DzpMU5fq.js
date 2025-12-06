@@ -1,1 +1,0 @@
-import{bP as r,bN as p,u as m}from"./app-CD6cBdKM.js";const c=r();function u(n){const{theme:e,name:s,props:o}=n;return!e||!e.components||!e.components[s]||!e.components[s].defaultProps?o:p(e.components[s].defaultProps,o)}function f({props:n,name:e,defaultTheme:s,themeId:o}){let t=m(s);return o&&(t=t[o]||t),u({theme:t,name:e,props:n})}export{u as g,c as s,f as u};
