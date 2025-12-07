@@ -33,9 +33,14 @@ type RouteParamsInput =
 export function route(
   name: RouteName,
   params?: RouteParamsInput,
-  absolute = true,
+  absolute = false,
 ): string {
   const config = resolveZiggyConfig();
+
+  if (typeof window !== 'undefined') {
+    config.url = window.location.origin;
+    config.location = new URL(window.location.href);
+  }
 
   if (!config.routes[name]) {
     console.warn(`Route [${name}] is not defined in Ziggy configuration`, { params });

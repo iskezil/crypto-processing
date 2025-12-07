@@ -1,3 +1,8 @@
+import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -6,9 +11,7 @@ import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Grid from '@mui/material/Grid';
 import Tab from '@mui/material/Tab';
-import Paper from '@mui/material/Paper';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
@@ -16,8 +19,12 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { CustomTabs } from 'src/components/custom-tabs';
 import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
-import { useState, type ReactNode } from 'react';
-import { TokenNetworkAvatar } from 'src/pages/dashboard/projects/components';
+import { Form } from 'src/components/hook-form';
+import { toast } from 'src/components/snackbar';
+import { CurrenciesStep } from '../create/components/CurrenciesStep';
+import { DetailsStep } from '../create/components/DetailsStep';
+import { LinksStep } from '../create/components/LinksStep';
+import { projectSchema, type ProjectFormValues } from '../create/schema';
 
 // ----------------------------------------------------------------------
 
@@ -32,6 +39,7 @@ type ModerationLog = {
 type TokenNetwork = {
   id: number;
   full_code: string;
+  stable_coin?: boolean;
   token?: { name?: string; code?: string; icon_path?: string; icon_url?: string };
   network?: { name?: string; code?: string; icon_path?: string; icon_url?: string; network?: string };
 };
@@ -43,50 +51,26 @@ type Project = {
   status: 'pending' | 'approved' | 'rejected';
   activity_type?: string;
   description?: string | null;
-  platform?: string;
+  platform?: ProjectFormValues['platform'];
   project_url?: string | null;
   success_url?: string | null;
   fail_url?: string | null;
   notify_url?: string | null;
   logo?: string | null;
-  test_mode: boolean;
   moderation_logs?: ModerationLog[];
   token_networks?: TokenNetwork[];
 };
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
 
-const platformLabels: Record<string, string> = {
+const platformLabels: Record<ProjectFormValues['platform'], string> = {
   website: 'pages/projects.platforms.website',
   telegram_bot: 'pages/projects.platforms.telegram_bot',
   vk_bot: 'pages/projects.platforms.vk_bot',
   other: 'pages/projects.platforms.other',
 };
 
-type InfoRowProps = {
-  title: string;
-  description: string;
-  children: ReactNode;
-};
-
-function InfoRow({ title, description, children }: InfoRowProps) {
-  return (
-    <Grid container spacing={2.5} alignItems="flex-start">
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Stack spacing={0.75}>
-          <Typography variant="subtitle1">{title}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {description}
-          </Typography>
-        </Stack>
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>{children}</Grid>
-    </Grid>
-  );
-}
-
-export default function ProjectShow({ project }: { project: Project }) {
+export default function ProjectShow({ project, tokenNetworks }: { project: Project; tokenNetworks: TokenNetwork[] }) {
   const { __ } = useLang();
   const [currentTab, setCurrentTab] = useState('details');
 
@@ -98,23 +82,81 @@ export default function ProjectShow({ project }: { project: Project }) {
     { value: 'fees', label: __('pages/projects.tabs.fees') },
   ];
 
-  const tokenNetworks = project.token_networks ?? [];
+  const Schema = useMemo(() => projectSchema(__), [__]);
 
-  const projectPlatformLabel = project.platform
-    ? __(platformLabels[project.platform] || project.platform)
-    : __('pages/projects.form.platform');
+  const methods = useForm<ProjectFormValues>({
+    resolver: zodResolver(Schema),
+    defaultValues: {
+      name: project.name || '',
+      activity_type: project.activity_type || '',
+      description: project.description || '',
+      platform: project.platform || 'website',
+      project_url: project.project_url || '',
+      success_url: project.success_url || '',
+      fail_url: project.fail_url || '',
+      notify_url: project.notify_url || '',
+      logo: project.logo || null,
+      token_network_ids: (project.token_networks || []).map((item) => item.id),
+      accept: true,
+    },
+  });
 
-  const projectUrlTitle = __(platformLabels[project.platform || 'website'] || 'pages/projects.form.project_url_website');
+  const {
+    handleSubmit,
+    watch,
+    setError,
+    trigger,
+    formState: { isSubmitting },
+  } = methods;
 
-  const testModeDescription = __('pages/projects.helpers.test_mode') || __('pages/projects.form.test_mode');
-
+  const platform = watch('platform');
+  const projectUrlLabel = __(platformLabels[platform]);
   const latestModeration = project.moderation_logs?.[project.moderation_logs.length - 1];
+
+  const onSubmit = handleSubmit((data) => {
+    const logo = data.logo instanceof File ? data.logo.name : data.logo || '';
+
+    const payload = {
+      ...data,
+      logo,
+      token_network_ids: data.token_network_ids.map((id) => Number(id)),
+    };
+
+    router.patch(route('projects.update', project.ulid), payload, {
+      onSuccess: () => {
+        toast.success(__('pages/projects.notifications.sent_to_moderation'));
+      },
+      onError: (errors) => {
+        Object.entries(errors).forEach(([field, message]) => {
+          setError(field as keyof ProjectFormValues, { type: 'server', message: message as string });
+        });
+      },
+    });
+  });
+
+  const handleTabChange = async (_: unknown, value: string) => {
+    const tabFields: Record<string, Array<keyof ProjectFormValues>> = {
+      details: ['name', 'activity_type', 'description'],
+      links: ['platform', 'project_url', 'success_url', 'fail_url', 'notify_url', 'logo'],
+      currencies: ['token_network_ids', 'accept'],
+    };
+
+    const fields = tabFields[currentTab];
+    if (fields) {
+      const valid = await trigger(fields as unknown as string[]);
+      if (!valid) {
+        return;
+      }
+    }
+
+    setCurrentTab(value);
+  };
 
   return (
     <>
       <title>{metadata.title}</title>
       <DashboardLayout>
-        <DashboardContent maxWidth="xl">
+        <DashboardContent maxWidth={false}>
           <CustomBreadcrumbs
             heading={project.name}
             links={[
@@ -155,7 +197,7 @@ export default function ProjectShow({ project }: { project: Project }) {
           <Card>
             <CustomTabs
               value={currentTab}
-              onChange={(_, value) => setCurrentTab(value)}
+              onChange={handleTabChange}
               variant="scrollable"
               allowScrollButtonsMobile
               slotProps={{
@@ -170,144 +212,63 @@ export default function ProjectShow({ project }: { project: Project }) {
             </CustomTabs>
             <Divider />
             <Box sx={{ p: { xs: 2, md: 3 } }}>
-              {currentTab === 'details' && (
+              <Form methods={methods} onSubmit={onSubmit}>
                 <Stack spacing={3}>
-                  <InfoRow
-                    title="Название проекта"
-                    description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
-                  >
-                    <Typography variant="body1">{project.name}</Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title="Вид деятельности"
-                    description="Наиболее подходящее обозначение вашей деятельности (интернет-магазин / онлайн-школа / сервис или платформа / цифровые товары / Telegram-бот и прочее)."
-                  >
-                    <Typography variant="body1">{project.activity_type || '—'}</Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title="Описание проекта"
-                    description="Расскажите кратко и понятно о вашем проекте: укажите продукт или услугу, целевую аудиторию и формат продажи."
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      {project.description || __('pages/projects.empty.description')}
-                    </Typography>
-                  </InfoRow>
-                </Stack>
-              )}
-
-              {currentTab === 'links' && (
-                <Stack spacing={3}>
-                  <InfoRow title="Платформа проекта" description="Выбирите платформу проекта.">
-                    <Typography variant="body1">{projectPlatformLabel}</Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title={projectUrlTitle}
-                    description="Ссылка на сайт, на котором вы хотите принимать платежи. Для корректности интеграции, пожалуйста, указывайте верные данные."
-                  >
-                    <Typography variant="body1" color="text.secondary">
-                      {project.project_url || '—'}
-                    </Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title="Успешный URL:"
-                    description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
-                  >
-                    <Typography variant="body1" color="text.secondary">
-                      {project.success_url || '—'}
-                    </Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title="Неудачный URL:"
-                    description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
-                  >
-                    <Typography variant="body1" color="text.secondary">
-                      {project.fail_url || '—'}
-                    </Typography>
-                  </InfoRow>
-
-                  <InfoRow
-                    title="URL для уведомлений"
-                    description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
-                  >
-                    <Typography variant="body1" color="text.secondary">
-                      {project.notify_url || '—'}
-                    </Typography>
-                  </InfoRow>
-                </Stack>
-              )}
-
-              {currentTab === 'currencies' && (
-                <Stack spacing={3}>
-                  {tokenNetworks.length ? (
-                    <Grid container spacing={2}>
-                      {tokenNetworks.map((tokenNetwork) => {
-                        const networkLabel =
-                          tokenNetwork.network?.network ||
-                          tokenNetwork.network?.name ||
-                          tokenNetwork.network?.code ||
-                          tokenNetwork.full_code;
-
-                        return (
-                          <Grid key={tokenNetwork.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                            <Paper
-                              variant="outlined"
-                              sx={{
-                                p: 2,
-                                gap: 1.5,
-                                display: 'flex',
-                                alignItems: 'center',
-                                height: '100%',
-                              }}
-                            >
-                              <TokenNetworkAvatar
-                                tokenIcon={tokenNetwork.token?.icon_url}
-                                networkIcon={tokenNetwork.network?.icon_url}
-                                name={tokenNetwork.token?.name || tokenNetwork.network?.name}
-                              />
-                              <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
-                                <Typography variant="subtitle2">
-                                  {tokenNetwork.token?.name || tokenNetwork.network?.name || tokenNetwork.full_code}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {networkLabel}
-                                </Typography>
-                              </Stack>
-                            </Paper>
-                          </Grid>
-                        );
-                      })}
-                    </Grid>
-                  ) : (
-                    <Alert severity="info">{__('pages/projects.integration.tokens_placeholder')}</Alert>
+                  {currentTab === 'details' && (
+                    <DetailsStep
+                      title={__('pages/projects.steps.details')}
+                      namePlaceholder={__('pages/projects.form.name')}
+                      activityPlaceholder={__('pages/projects.form.activity_type')}
+                    />
                   )}
 
-                  <InfoRow title={__('pages/projects.form.test_mode')} description={testModeDescription}>
-                    <Chip
-                      label={project.test_mode ? __('pages/projects.status.enabled') : __('pages/projects.status.disabled')}
-                      color={project.test_mode ? 'success' : 'default'}
-                      variant={project.test_mode ? 'filled' : 'outlined'}
+                  {currentTab === 'links' && (
+                    <LinksStep
+                      title={__('pages/projects.steps.links')}
+                      platformLabels={{
+                        website: __('pages/projects.platforms.website'),
+                        telegram_bot: __('pages/projects.platforms.telegram_bot'),
+                        vk_bot: __('pages/projects.platforms.vk_bot'),
+                        other: __('pages/projects.platforms.other'),
+                      }}
+                      projectUrlLabel={projectUrlLabel}
+                      projectUrlPlaceholder="https://"
+                      logoTitle={__('pages/projects.helpers.logo_title')}
+                      logoDescription={__('pages/projects.helpers.logo_description')}
                     />
-                  </InfoRow>
-                </Stack>
-              )}
+                  )}
 
-              {currentTab === 'integration' && (
-                <Stack spacing={2}>
-                  <Typography variant="body2" color="text.secondary">
-                    {__('pages/projects.integration.shop_id')}: {project.ulid}
-                  </Typography>
-                  <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
-                </Stack>
-              )}
+                  {currentTab === 'currencies' && (
+                    <CurrenciesStep
+                      title={__('pages/projects.steps.currencies')}
+                      tokenNetworks={tokenNetworks}
+                      control={methods.control}
+                      acceptLabel={__('pages/projects.form.accept_terms')}
+                    />
+                  )}
 
-              {currentTab === 'fees' && (
-                <Alert severity="info">{__('pages/projects.integration.fees_placeholder')}</Alert>
-              )}
+                  {currentTab === 'integration' && (
+                    <Stack spacing={2}>
+                      <Typography variant="body2" color="text.secondary">
+                        {__('pages/projects.integration.shop_id')}: {project.ulid}
+                      </Typography>
+                      <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
+                    </Stack>
+                  )}
+
+                  {currentTab === 'fees' && (
+                    <Alert severity="info">{__('pages/projects.integration.fees_placeholder')}</Alert>
+                  )}
+
+                  {currentTab !== 'integration' && currentTab !== 'fees' && (
+                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                      <Button type="submit" variant="contained" disabled={isSubmitting}>
+                        {__('pages/projects.actions.save')}
+                      </Button>
+                    </Stack>
+                  )}
+                </Stack>
+              </Form>
             </Box>
           </Card>
         </DashboardContent>

@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -69,14 +70,13 @@ class ProjectUserController extends Controller
       $validated = $request->validate([
         'name' => ['required', 'string', 'max:255'],
         'activity_type' => ['required', 'string', 'max:255'],
-        'description' => ['nullable', 'string'],
+        'description' => ['required', 'string'],
         'platform' => ['required', 'in:website,telegram_bot,vk_bot,other'],
-        'project_url' => ['nullable', 'string', 'max:255'],
+        'project_url' => ['required', 'string', 'max:255'],
         'success_url' => ['nullable', 'string', 'max:255'],
         'fail_url' => ['nullable', 'string', 'max:255'],
         'notify_url' => ['nullable', 'string', 'max:255'],
         'logo' => ['nullable', 'string', 'max:255'],
-        'test_mode' => ['boolean'],
         'token_network_ids' => ['required', 'array', 'min:1'],
         'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
       ]);
@@ -92,7 +92,6 @@ class ProjectUserController extends Controller
         'fail_url' => Arr::get($validated, 'fail_url'),
         'notify_url' => Arr::get($validated, 'notify_url'),
         'logo' => Arr::get($validated, 'logo'),
-        'test_mode' => Arr::get($validated, 'test_mode', false),
         'status' => 'pending',
         'is_archived' => false,
       ]);
@@ -136,13 +135,89 @@ class ProjectUserController extends Controller
         'tokenNetworks.network',
       ]);
 
+      $tokenNetworks = TokenNetwork::query()
+        ->with(['token:id,name,code,icon_path', 'network:id,name,code,icon_path'])
+        ->where('active', true)
+        ->orderBy('order')
+        ->get([
+          'id',
+          'token_id',
+          'network_id',
+          'full_code',
+          'stable_coin',
+        ]);
+
       return Inertia::render('dashboard/projects/show', [
         'project' => $project,
+        'tokenNetworks' => $tokenNetworks,
       ]);
     }
 
-    public function update(){
-      return 'null';
+    public function update(Request $request, Project $project): RedirectResponse
+    {
+      $user = $request->user();
+
+      abort_unless(
+        $user && ($project->user_id === $user->id || $user->can('PROJECTS_MODERATION_VIEW')),
+        403
+      );
+
+      $validated = $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'activity_type' => ['required', 'string', 'max:255'],
+        'description' => ['required', 'string'],
+        'platform' => ['required', 'in:website,telegram_bot,vk_bot,other'],
+        'project_url' => ['required', 'string', 'max:255'],
+        'success_url' => ['nullable', 'string', 'max:255'],
+        'fail_url' => ['nullable', 'string', 'max:255'],
+        'notify_url' => ['nullable', 'string', 'max:255'],
+        'logo' => ['nullable', 'string', 'max:255'],
+        'token_network_ids' => ['required', 'array', 'min:1'],
+        'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
+      ]);
+
+      DB::transaction(function () use ($project, $validated, $user) {
+        $originalStatus = $project->status;
+
+        $project->update([
+          'name' => $validated['name'],
+          'activity_type' => $validated['activity_type'],
+          'description' => Arr::get($validated, 'description'),
+          'platform' => $validated['platform'],
+          'project_url' => Arr::get($validated, 'project_url'),
+          'success_url' => Arr::get($validated, 'success_url'),
+          'fail_url' => Arr::get($validated, 'fail_url'),
+          'notify_url' => Arr::get($validated, 'notify_url'),
+          'logo' => Arr::get($validated, 'logo'),
+          'status' => $originalStatus === 'approved' ? 'pending' : $originalStatus,
+        ]);
+
+        ProjectTokenNetwork::where('project_id', $project->id)->delete();
+
+        foreach ($validated['token_network_ids'] as $index => $tokenNetworkId) {
+          ProjectTokenNetwork::create([
+            'project_id' => $project->id,
+            'token_network_id' => $tokenNetworkId,
+            'enabled' => true,
+            'is_default' => $index === 0,
+            'order' => $index,
+          ]);
+        }
+
+        if ($originalStatus === 'approved') {
+          ProjectModerationLog::create([
+            'project_id' => $project->id,
+            'moderation_type' => 'general',
+            'moderator_id' => $user->id,
+            'status' => 'pending',
+            'comment' => null,
+          ]);
+        }
+      });
+
+      return redirect()
+        ->route('projects.show', $project)
+        ->with('flash.banner', __('pages/projects.notifications.sent_to_moderation'));
     }
 
     public function destroy(){

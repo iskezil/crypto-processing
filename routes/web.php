@@ -82,6 +82,10 @@ Route::middleware('auth')->group(function () {
     ->middleware('permission:PROJECTS_CREATE')
     ->name('projects.store');
 
+  Route::patch('/projects/{project:ulid}', [ProjectUserController::class, 'update'])
+    ->middleware(['permission:PROJECTS_EDIT', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects.update');
+
   Route::get('/projects/{project:ulid}', [ProjectUserController::class, 'show'])
     ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects.show');
