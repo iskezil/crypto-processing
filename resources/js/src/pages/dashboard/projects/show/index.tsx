@@ -333,9 +333,8 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
             links={breadcrumbLinks}
             sx={{ mb: { xs: 3, md: 5 } }}
           />
-
+          {canModerate && (
           <Card sx={{ p: 3, mb: 3 }}>
-            {canModerate && (
               <Stack spacing={2} sx={{ mt: 3 }}>
                 <TextField
                   label={__('pages/projects.form.moderation_comment')}
@@ -410,9 +409,8 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                   )}
                 </Stack>
               </Stack>
-            )}
           </Card>
-
+          )}
           {!isAdminView && project.status === 'pending' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               {__('pages/projects.alerts.pending')}

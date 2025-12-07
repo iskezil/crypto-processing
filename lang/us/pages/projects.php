@@ -94,6 +94,6 @@ return [
     ],
     'alerts' => [
         'pending' => 'The project is under moderation.',
-        'rejected' => 'The project was rejected. Reason: :reason',
+        'rejected' => 'The project was rejected. Reason: {reason}',
     ],
 ];

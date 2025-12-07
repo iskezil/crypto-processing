@@ -16,6 +16,6 @@ return [
         'projects_moderation' => 'Модерация проектов',
         'projects_rejected' => 'Отклоненные проекты',
         'projects_active' => 'Активные проекты',
-        'projects_count' => 'Количество проектов: :count',
+        'projects_count' => 'Количество проектов: {count}',
     ],
 ];
