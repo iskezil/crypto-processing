@@ -56,7 +56,16 @@ export function DetailsStep({
         title="Название проекта"
         description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
       >
-        <Field.Text name="name" placeholder={namePlaceholder} />
+          <TextField
+              size={'small'}
+              margin="dense"
+              fullWidth
+              variant="filled"
+              label={namePlaceholder}
+              value={''}
+              onChange={() => {}}
+          />
+        {/*<Field.Text name="name" placeholder={namePlaceholder} />*/}
       </FormRow>
 
       <FormRow
