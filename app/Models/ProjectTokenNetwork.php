@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectTokenNetwork extends Model
 {
@@ -25,14 +26,24 @@ class ProjectTokenNetwork extends Model
 
     public $timestamps = true;
 
-    public function project()
+    public function project(): BelongsTo
     {
       return $this->belongsTo(Project::class);
     }
 
-    public function tokenNetwork()
+    public function tokenNetwork(): BelongsTo
     {
       return $this->belongsTo(TokenNetwork::class);
+    }
+
+    public function token(): BelongsTo
+    {
+      return $this->belongsTo(Token::class);
+    }
+
+    public function network(): BelongsTo
+    {
+      return $this->belongsTo(Network::class);
     }
 
 }

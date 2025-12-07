@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\HasUlid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
@@ -45,42 +48,42 @@ class Project extends Model
 
   // Связи
 
-  public function user()
+  public function user(): BelongsTo
   {
     return $this->belongsTo(User::class);
   }
 
-  public function moderationLogs()
+  public function moderationLogs(): HasMany
   {
     return $this->hasMany(ProjectModerationLog::class);
   }
 
-  public function apiKeys()
+  public function apiKeys(): HasMany
   {
     return $this->hasMany(ProjectApiKey::class);
   }
 
-  public function invoices()
+  public function invoices(): HasMany
   {
     return $this->hasMany(Invoice::class);
   }
 
-  public function hdWallets()
+  public function hdWallets(): HasMany
   {
     return $this->hasMany(HdWallet::class);
   }
 
-  public function depositEvents()
+  public function depositEvents(): HasMany
   {
     return $this->hasMany(DepositEvent::class);
   }
 
-  public function invoiceWebhookLogs()
+  public function invoiceWebhookLogs(): HasMany
   {
     return $this->hasMany(InvoiceWebhookLog::class);
   }
 
-  public function tokenNetworks()
+  public function tokenNetworks(): BelongsToMany
   {
     return $this->belongsToMany(TokenNetwork::class, 'project_token_networks')
       ->using(ProjectTokenNetwork::class)
