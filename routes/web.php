@@ -94,6 +94,10 @@ Route::middleware('auth')->group(function () {
     ->middleware(['permission:PROJECTS_EDIT|PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects.api_keys.regenerate');
 
+  Route::post('/projects/{project:ulid}/api-keys/secret', [ProjectUserController::class, 'generateSecret'])
+    ->middleware(['permission:PROJECTS_EDIT|PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects.api_keys.secret');
+
   Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_moderation.index');

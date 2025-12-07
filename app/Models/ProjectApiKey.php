@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectApiKey extends Model
 {
@@ -13,7 +14,8 @@ class ProjectApiKey extends Model
 
     protected $fillable = [
       'project_id',
-      'api_key',
+      'plain_text_token',
+      'personal_access_token_id',
       'secret',
       'last_used_at',
       'status',
@@ -25,9 +27,19 @@ class ProjectApiKey extends Model
       'revoked_at'   => 'datetime',
     ];
 
-    public function project()
+    protected $hidden = [
+      'secret',
+      'personal_access_token_id',
+    ];
+
+    public function project(): BelongsTo
     {
       return $this->belongsTo(Project::class);
+    }
+
+    public function accessToken(): BelongsTo
+    {
+      return $this->belongsTo(\Laravel\Sanctum\PersonalAccessToken::class, 'personal_access_token_id');
     }
 
 }

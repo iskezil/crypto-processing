@@ -14,6 +14,7 @@ type LinksStepProps = {
   projectUrlPlaceholder?: string;
   logoTitle: string;
   logoDescription: string;
+  showCallbacks?: boolean;
 };
 
 export function LinksStep({
@@ -23,6 +24,7 @@ export function LinksStep({
   platformLabels,
   logoDescription,
   logoTitle,
+  showCallbacks = true,
 }: LinksStepProps) {
   return (
     <Stack spacing={3}>
@@ -44,26 +46,30 @@ export function LinksStep({
         <Field.Text name="project_url" placeholder={projectUrlPlaceholder || 'https://'} />
       </FormRow>
 
-      <FormRow
-        title="Успешный URL:"
-        description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
-      >
-        <Field.Text name="success_url" placeholder="https://" />
-      </FormRow>
+      {showCallbacks && (
+        <>
+          <FormRow
+            title="Успешный URL:"
+            description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
+          >
+            <Field.Text name="success_url" placeholder="https://" />
+          </FormRow>
 
-      <FormRow
-        title="Неудачный URL:"
-        description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
-      >
-        <Field.Text name="fail_url" placeholder="https://" />
-      </FormRow>
+          <FormRow
+            title="Неудачный URL:"
+            description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
+          >
+            <Field.Text name="fail_url" placeholder="https://" />
+          </FormRow>
 
-      <FormRow
-        title="URL для уведомлений"
-        description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
-      >
-        <Field.Text name="notify_url" placeholder="https://" />
-      </FormRow>
+          <FormRow
+            title="URL для уведомлений"
+            description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
+          >
+            <Field.Text name="notify_url" placeholder="https://" />
+          </FormRow>
+        </>
+      )}
 
       <FormRow
         title="Логотип на платежной странице"

@@ -13,7 +13,8 @@ return new class extends Migration {
     Schema::create('project_api_keys', function (Blueprint $table) {
       $table->id()->comment('ID API-ключа проекта');
       $table->unsignedBigInteger('project_id')->comment('ID проекта (projects.id)');
-      $table->string('api_key', 255)->unique()->comment('Публичный API key для авторизации (передается в заголовках)');
+      $table->unsignedBigInteger('personal_access_token_id')->nullable();
+      $table->string('plain_text_token', 512)->nullable();
       $table->string('secret', 255)->comment('Секрет API-ключа (хранить в зашифрованном виде)');
       $table->json('ip_allow_list')->nullable()->comment('Список разрешённых IP (JSON/CSV), если используется ограничение по IP');
       $table->integer('rate_limit')->nullable()->comment('Лимит запросов в минуту для этого ключа (NULL = по умолчанию)');

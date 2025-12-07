@@ -87,6 +87,12 @@ export const Ziggy = {
       parameters: ['status', 'project'],
       bindings: { project: 'ulid' },
     },
+    'projects.api_keys.secret': {
+      uri: 'projects/{project}/api-keys/secret',
+      methods: ['POST'],
+      parameters: ['project'],
+      bindings: { project: 'ulid' },
+    },
     'pos.show': {
       uri: 'pos/{project}',
       methods: ['GET', 'HEAD'],

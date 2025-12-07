@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
@@ -16,6 +16,11 @@ import { tabClasses } from '@mui/material/Tab';
 import type { Theme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 
 import Timeline from '@mui/lab/Timeline';
 import TimelineItem from '@mui/lab/TimelineItem';
@@ -31,12 +36,14 @@ import { CustomTabs } from 'src/components/custom-tabs';
 import { Iconify } from 'src/components/iconify';
 import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
-import { Form } from 'src/components/hook-form';
+import { Field, Form } from 'src/components/hook-form';
 import { toast } from 'src/components/snackbar';
 import { useAuthz } from 'src/lib/authz';
+import axiosInstance from 'src/lib/axios';
 import { CurrenciesStep } from '../create/components/CurrenciesStep';
 import { DetailsStep } from '../create/components/DetailsStep';
 import { LinksStep } from '../create/components/LinksStep';
+import { FormRow } from '../create/components/FormRow';
 import { projectSchema, type ProjectFormValues } from '../create/schema';
 import { varAlpha } from 'minimal-shared/utils';
 
@@ -52,8 +59,8 @@ type ModerationLog = {
 
 type ProjectApiKey = {
   id: number;
-  api_key: string;
-  secret: string;
+  plain_text_token?: string | null;
+  secret?: string | null;
   status: 'moderation' | 'active' | 'rejected' | 'revoked';
   revoked_at?: string | null;
   created_at: string;
@@ -111,10 +118,14 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   const [moderationComment, setModerationComment] = useState('');
   const [isPaymentLinkCopied, setIsPaymentLinkCopied] = useState(false);
   const [isApiKeyCopied, setIsApiKeyCopied] = useState(false);
+  const [isShopIdCopied, setIsShopIdCopied] = useState(false);
   const [isSecretCopied, setIsSecretCopied] = useState(false);
+  const [isSecretModalOpen, setIsSecretModalOpen] = useState(false);
+  const [generatedSecret, setGeneratedSecret] = useState('');
+  const [isGeneratingSecret, setIsGeneratingSecret] = useState(false);
 
   const isAdminView = viewMode === 'admin';
-  const apiKeys = project.api_keys ?? [];
+  const [apiKeys, setApiKeys] = useState<ProjectApiKey[]>(project.api_keys ?? []);
   const activeApiKey = apiKeys.find((key) => key.status !== 'revoked') ?? apiKeys[0];
   const revokedKeys = apiKeys.filter((key) => key.status === 'revoked');
   const rejectionLog = [...(project.moderation_logs ?? [])]
@@ -135,6 +146,10 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     rejected: 'error',
     revoked: 'info',
   };
+
+  useEffect(() => {
+    setApiKeys(project.api_keys ?? []);
+  }, [project.api_keys]);
 
   const moderationStatusColors: Record<string, 'warning' | 'success' | 'error'> = {
     pending: 'warning',
@@ -265,26 +280,52 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   const handleCopyPaymentLink = async () =>
     copyValue(paymentPageLink, setIsPaymentLinkCopied, __('pages/projects.notifications.payment_link_copied'));
 
+  const handleCopyShopId = async () =>
+    copyValue(project.ulid, setIsShopIdCopied, __('pages/projects.notifications.api_key_copied'));
+
   const handleCopyApiKey = async () => {
     if (!activeApiKey) return;
-    copyValue(activeApiKey.api_key, setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
-  };
-
-  const handleCopyApiSecret = async () => {
-    if (!activeApiKey) return;
-    copyValue(activeApiKey.secret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
-  };
-
-  const handleRegenerateApiKeys = () => {
-    router.post(
-      route('projects.api_keys.regenerate', project.ulid),
-      {},
-      {
-        preserveScroll: true,
-        onSuccess: () => toast.success(__('pages/projects.notifications.api_keys_regenerated')),
-        onError: () => toast.error(__('pages/projects.notifications.status_change_failed')),
-      }
+    copyValue(
+      activeApiKey.plain_text_token || '',
+      setIsApiKeyCopied,
+      __('pages/projects.notifications.api_key_copied')
     );
+  };
+
+  const handleCopySecret = async (secret: string) =>
+    copyValue(secret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+
+  const handleGenerateSecret = async () => {
+    if (!integrationAvailable) return;
+
+    setIsGeneratingSecret(true);
+    setIsSecretCopied(false);
+
+    try {
+      const { data } = await axiosInstance.post<{ api_keys: ProjectApiKey[]; secret: string; api_key?: string }>(
+        route('projects.api_keys.secret', project.ulid)
+      );
+
+      if (data.api_keys) {
+        setApiKeys(data.api_keys);
+      }
+
+      if (data.secret) {
+        setGeneratedSecret(data.secret);
+        setIsSecretModalOpen(true);
+      }
+
+      toast.success(__('pages/projects.notifications.secret_created'));
+    } catch (error) {
+      toast.error(__('pages/projects.notifications.status_change_failed'));
+    } finally {
+      setIsGeneratingSecret(false);
+    }
+  };
+
+  const handleCloseSecretModal = () => {
+    setIsSecretModalOpen(false);
+    setGeneratedSecret('');
   };
 
   const onSubmit = handleSubmit((data) => {
@@ -314,8 +355,9 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
 
     const tabFields: Record<string, Array<keyof ProjectFormValues>> = {
       details: ['name', 'activity_type', 'description'],
-      links: ['platform', 'project_url', 'success_url', 'fail_url', 'notify_url', 'logo'],
+      links: ['platform', 'project_url', 'logo'],
       currencies: ['token_network_ids', 'accept'],
+      integration: ['success_url', 'fail_url', 'notify_url'],
     };
 
     const fields = tabFields[currentTab];
@@ -507,6 +549,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                       projectUrlPlaceholder="https://"
                       logoTitle={__('pages/projects.helpers.logo_title')}
                       logoDescription={__('pages/projects.helpers.logo_description')}
+                      showCallbacks={false}
                     />
                   )}
 
@@ -521,104 +564,147 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
 
                   {currentTab === 'integration' && (
                     <Stack spacing={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        {__('pages/projects.integration.shop_id')}: {project.ulid}
-                      </Typography>
-
                       {!integrationAvailable ? (
                         <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
                       ) : (
-                        <Stack spacing={2}>
-                          {activeApiKey ? (
-                            <>
-                              <Stack
-                                direction={{ xs: 'column', sm: 'row' }}
-                                spacing={1}
-                                alignItems={{ sm: 'center' }}
-                              >
-                                <Chip
-                                  color={apiKeyStatusColors[activeApiKey.status]}
-                                  label={apiKeyStatusLabels[activeApiKey.status]}
-                                />
-                                <Typography variant="caption" color="text.secondary">
-                                  {__('pages/projects.integration.generated_at', { date: activeApiKey.created_at })}
-                                </Typography>
-                              </Stack>
+                        <Stack spacing={3}>
+                          <Stack
+                            direction={{ xs: 'column', md: 'row' }}
+                            spacing={3}
+                            alignItems={{ md: 'flex-start' }}
+                          >
+                            <Stack spacing={1} flex={{ md: '1 1 40%' }}>
+                              <Typography variant="h6">{__('pages/projects.integration.api_keys_title')}</Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {__('pages/projects.integration.api_keys_hint')}
+                              </Typography>
+                            </Stack>
 
-                              <TextField
-                                label={__('pages/projects.integration.api_key')}
-                                value={activeApiKey.api_key}
-                                InputProps={{
-                                  readOnly: true,
-                                  endAdornment: (
-                                    <InputAdornment position="end">
-                                      <Button
-                                        size="small"
-                                        color={isApiKeyCopied ? 'success' : 'primary'}
-                                        startIcon={<Iconify icon="solar:copy-bold" width={18} />}
-                                        onClick={handleCopyApiKey}
-                                      >
-                                        {isApiKeyCopied
-                                          ? __('pages/projects.integration.copied')
-                                          : __('pages/projects.integration.copy')}
-                                      </Button>
-                                    </InputAdornment>
-                                  ),
-                                }}
-                              />
+                            <Stack spacing={2} flex={{ md: '1 1 60%' }}>
+                              {activeApiKey ? (
+                                <>
+                                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                                    <Chip
+                                      color={apiKeyStatusColors[activeApiKey.status]}
+                                      label={apiKeyStatusLabels[activeApiKey.status]}
+                                    />
+                                    <Typography variant="caption" color="text.secondary">
+                                      {__('pages/projects.integration.generated_at', { date: activeApiKey.created_at })}
+                                    </Typography>
+                                  </Stack>
 
-                              <TextField
-                                label={__('pages/projects.integration.api_secret')}
-                                value={activeApiKey.secret}
-                                InputProps={{
-                                  readOnly: true,
-                                  endAdornment: (
-                                    <InputAdornment position="end">
-                                      <Button
-                                        size="small"
-                                        color={isSecretCopied ? 'success' : 'primary'}
-                                        startIcon={<Iconify icon="solar:copy-bold" width={18} />}
-                                        onClick={handleCopyApiSecret}
-                                      >
-                                        {isSecretCopied
-                                          ? __('pages/projects.integration.copied')
-                                          : __('pages/projects.integration.copy')}
-                                      </Button>
-                                    </InputAdornment>
-                                  ),
-                                }}
-                              />
+                                  <TextField
+                                    label={__('pages/projects.integration.api_key')}
+                                    value={activeApiKey.plain_text_token || ''}
+                                    InputProps={{
+                                      readOnly: true,
+                                      endAdornment: (
+                                        <InputAdornment position="end">
+                                          <IconButton
+                                            color={isApiKeyCopied ? 'success' : 'default'}
+                                            onClick={handleCopyApiKey}
+                                            disabled={!activeApiKey.plain_text_token}
+                                          >
+                                            <Iconify icon="solar:copy-bold" width={18} />
+                                          </IconButton>
+                                        </InputAdornment>
+                                      ),
+                                    }}
+                                  />
 
-                              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="flex-end">
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<Iconify icon="solar:refresh-bold" width={18} />}
-                                  onClick={handleRegenerateApiKeys}
-                                >
-                                  {__('pages/projects.actions.regenerate_keys')}
-                                </Button>
-                              </Stack>
+                                  <TextField
+                                    label={__('pages/projects.integration.shop_id')}
+                                    value={project.ulid}
+                                    InputProps={{
+                                      readOnly: true,
+                                      endAdornment: (
+                                        <InputAdornment position="end">
+                                          <IconButton
+                                            color={isShopIdCopied ? 'success' : 'default'}
+                                            onClick={handleCopyShopId}
+                                          >
+                                            <Iconify icon="solar:copy-bold" width={18} />
+                                          </IconButton>
+                                        </InputAdornment>
+                                      ),
+                                    }}
+                                  />
 
-                              {revokedKeys.length > 0 && (
-                                <Stack spacing={1}>
-                                  <Typography variant="subtitle2">
-                                    {__('pages/projects.integration.revoked_keys')}
-                                  </Typography>
-                                  {revokedKeys.map((key) => (
-                                    <Alert key={key.id} severity="info">
-                                      {__('pages/projects.integration.revoked_key_item', {
-                                        date: key.revoked_at ?? key.created_at,
-                                      })}
-                                    </Alert>
-                                  ))}
-                                </Stack>
+                                  <TextField
+                                    label={__('pages/projects.integration.api_secret')}
+                                    value={__('pages/projects.integration.secret_placeholder')}
+                                    InputProps={{
+                                      readOnly: true,
+                                      startAdornment: (
+                                        <InputAdornment position="start">
+                                          <Iconify icon="solar:lock-keyhole-bold-duotone" width={20} />
+                                        </InputAdornment>
+                                      ),
+                                      endAdornment: (
+                                        <InputAdornment position="end">
+                                          <Button
+                                            size="small"
+                                            color="primary"
+                                            startIcon={<Iconify icon="solar:add-circle-bold" width={18} />}
+                                            onClick={handleGenerateSecret}
+                                            disabled={isGeneratingSecret}
+                                          >
+                                            {__('pages/projects.integration.generate_secret')}
+                                          </Button>
+                                        </InputAdornment>
+                                      ),
+                                    }}
+                                  />
+                                </>
+                              ) : (
+                                <Alert severity="warning">{__('pages/projects.integration.api_key_missing')}</Alert>
                               )}
-                            </>
-                          ) : (
-                            <Alert severity="warning">{__('pages/projects.integration.api_key_missing')}</Alert>
+                            </Stack>
+                          </Stack>
+
+                          {revokedKeys.length > 0 && (
+                            <Stack spacing={1}>
+                              <Typography variant="subtitle2">
+                                {__('pages/projects.integration.revoked_keys')}
+                              </Typography>
+                              {revokedKeys.map((key) => (
+                                <Alert key={key.id} severity="info">
+                                  {__('pages/projects.integration.revoked_key_item', {
+                                    date: key.revoked_at ?? key.created_at,
+                                  })}
+                                </Alert>
+                              ))}
+                            </Stack>
                           )}
                         </Stack>
                       )}
+
+                      <Divider />
+
+                      <Stack spacing={2}>
+                        <Typography variant="h6">{__('pages/projects.integration.project_data_title')}</Typography>
+
+                        <FormRow
+                          title="Успешный URL:"
+                          description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
+                        >
+                          <Field.Text name="success_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="Неудачный URL:"
+                          description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
+                        >
+                          <Field.Text name="fail_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="URL для уведомлений"
+                          description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
+                        >
+                          <Field.Text name="notify_url" placeholder="https://" />
+                        </FormRow>
+                      </Stack>
                     </Stack>
                   )}
 
@@ -685,7 +771,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                     </Stack>
                   )}
 
-                  {currentTab !== 'integration' && currentTab !== 'fees' && currentTab !== 'history' && (
+                  {currentTab !== 'fees' && currentTab !== 'history' && (
                     <Stack direction="row" spacing={2} justifyContent="flex-end">
                       <Button type="submit" variant="contained" disabled={isSubmitting}>
                         {__('pages/projects.actions.save')}
@@ -696,6 +782,53 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
               </Form>
             </Box>
           </Card>
+
+          <Dialog open={isSecretModalOpen} onClose={handleCloseSecretModal} maxWidth="sm" fullWidth>
+            <DialogTitle>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Iconify icon="solar:shield-keyhole-bold-duotone" width={24} />
+                <Typography variant="h6">{__('pages/projects.integration.secret_modal.title')}</Typography>
+              </Stack>
+            </DialogTitle>
+
+            <DialogContent>
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  {__('pages/projects.integration.secret_modal.description')}
+                </Typography>
+
+                <TextField
+                  label={__('pages/projects.integration.api_secret')}
+                  value={generatedSecret}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton color={isSecretCopied ? 'success' : 'default'} onClick={() => handleCopySecret(generatedSecret)}>
+                          <Iconify icon="solar:copy-bold" width={18} />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <Alert severity="warning" icon={<Iconify icon="solar:danger-triangle-bold" width={20} />}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="subtitle2">
+                      {__('pages/projects.integration.secret_modal.attention')}
+                    </Typography>
+                    <Typography variant="body2">
+                      {__('pages/projects.integration.secret_modal.note')}
+                    </Typography>
+                  </Stack>
+                </Alert>
+              </Stack>
+            </DialogContent>
+
+            <DialogActions>
+              <Button onClick={handleCloseSecretModal}>{__('pages/projects.integration.secret_modal.close')}</Button>
+            </DialogActions>
+          </Dialog>
         </DashboardContent>
       </DashboardLayout>
     </>
