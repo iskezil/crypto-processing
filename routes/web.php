@@ -93,6 +93,18 @@ Route::middleware('auth')->group(function () {
   Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_moderation.index');
+
+  Route::get('/admin/projects/rejected', [ProjectAdminController::class, 'rejected'])
+    ->middleware(['permission:PROJECTS_REJECTED_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects_rejected.index');
+
+  Route::get('/admin/projects/active', [ProjectAdminController::class, 'active'])
+    ->middleware(['permission:PROJECTS_ACTIVE_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects_active.index');
+
+  Route::post('/admin/projects/{project:ulid}/moderate', [ProjectAdminController::class, 'moderate'])
+    ->middleware(['permission:PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT'])
+    ->name('projects.moderate');
 });
 
 

@@ -29,6 +29,12 @@ export enum PERMISSION_NAMES {
   PROJECTS_MODERATION_EDIT = 'pages/permissions.names.projects_moderation_edit',
   PROJECTS_MODERATION_DELETE = 'pages/permissions.names.projects_moderation_delete',
 
+  PROJECTS_REJECTED_VIEW = 'pages/permissions.names.projects_rejected_view',
+  PROJECTS_REJECTED_EDIT = 'pages/permissions.names.projects_rejected_edit',
+
+  PROJECTS_ACTIVE_VIEW = 'pages/permissions.names.projects_active_view',
+  PROJECTS_ACTIVE_EDIT = 'pages/permissions.names.projects_active_edit',
+
 }
 
 export enum PERMISSION_MODULE_NAMES {
@@ -37,4 +43,6 @@ export enum PERMISSION_MODULE_NAMES {
   PERMISSIONS = 'pages/permissions.modules.permissions',
   PROJECTS = 'pages/permissions.modules.projects',
   PROJECTS_MODERATION = 'pages/permissions.modules.projects_moderation',
+  PROJECTS_REJECTED = 'pages/permissions.modules.projects_rejected',
+  PROJECTS_ACTIVE = 'pages/permissions.modules.projects_active',
 }

@@ -54,6 +54,21 @@ class   HandleInertiaRequests extends Middleware
             ->orderBy('name')
             ->get(['id', 'ulid', 'name', 'status']);
         },
+        'projectsModerationStats' => function () use ($request) {
+          if (!$request->user() || !$request->user()->canAny([
+            'PROJECTS_MODERATION_VIEW',
+            'PROJECTS_REJECTED_VIEW',
+            'PROJECTS_ACTIVE_VIEW',
+          ])) {
+            return null;
+          }
+
+          return [
+            'pending' => Project::where('status', 'pending')->count(),
+            'approved' => Project::where('status', 'approved')->count(),
+            'rejected' => Project::where('status', 'rejected')->count(),
+          ];
+        },
         'csrf_token' => csrf_token(),
       ]);
 

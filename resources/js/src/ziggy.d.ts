@@ -89,6 +89,15 @@ declare module 'ziggy-js' {
       }
     ];
     "projects_moderation.index": [];
+    "projects_rejected.index": [];
+    "projects_active.index": [];
+    "projects.moderate": [
+      {
+        "name": "project";
+        "required": true;
+        "binding": "ulid";
+      }
+    ];
     "register": [];
     "login": [];
     "password.request": [];

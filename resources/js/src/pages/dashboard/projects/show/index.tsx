@@ -12,6 +12,7 @@ import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
+import TextField from '@mui/material/TextField';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
@@ -21,6 +22,7 @@ import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
 import { Form } from 'src/components/hook-form';
 import { toast } from 'src/components/snackbar';
+import { useAuthz } from 'src/lib/authz';
 import { CurrenciesStep } from '../create/components/CurrenciesStep';
 import { DetailsStep } from '../create/components/DetailsStep';
 import { LinksStep } from '../create/components/LinksStep';
@@ -72,7 +74,9 @@ const platformLabels: Record<ProjectFormValues['platform'], string> = {
 
 export default function ProjectShow({ project, tokenNetworks }: { project: Project; tokenNetworks: TokenNetwork[] }) {
   const { __ } = useLang();
+  const { can } = useAuthz();
   const [currentTab, setCurrentTab] = useState('details');
+  const [moderationComment, setModerationComment] = useState('');
 
   const tabs = [
     { value: 'details', label: __('pages/projects.steps.details') },
@@ -152,6 +156,28 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
     setCurrentTab(value);
   };
 
+  const handleModeration = (action: 'approve' | 'reject' | 'to_pending') => {
+    router.post(
+      route('projects.moderate', project.ulid),
+      {
+        action,
+        comment: moderationComment || null,
+      },
+      {
+        onSuccess: () => {
+          setModerationComment('');
+          toast.success(__('pages/projects.notifications.status_changed'));
+        },
+        onError: () => {
+          toast.error(__('pages/projects.notifications.status_change_failed'));
+        },
+      }
+    );
+  };
+
+  const canModerate =
+    can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT');
+
   return (
     <>
       <title>{metadata.title}</title>
@@ -192,9 +218,65 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
                 {__('pages/projects.alerts.rejected', { reason: latestModeration.comment })}
               </Alert>
             )}
+
+            {canModerate && (
+              <Stack spacing={2} sx={{ mt: 3 }}>
+                <TextField
+                  label={__('pages/projects.form.moderation_comment')}
+                  multiline
+                  minRows={2}
+                  value={moderationComment}
+                  onChange={(event) => setModerationComment(event.target.value)}
+                />
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  {project.status === 'pending' && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleModeration('approve')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.approve')}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleModeration('reject')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.reject')}
+                      </Button>
+                    </>
+                  )}
+
+                  {project.status === 'rejected' && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        onClick={() => handleModeration('to_pending')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.back_to_moderation')}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleModeration('approve')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.approve')}
+                      </Button>
+                    </>
+                  )}
+                </Stack>
+              </Stack>
+            )}
           </Card>
 
-          <Card>
+          <Card sx={{ mb: 2 }}>
             <CustomTabs
               value={currentTab}
               onChange={handleTabChange}
@@ -210,6 +292,8 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
                 <Tab key={tab.value} value={tab.value} label={tab.label} />
               ))}
             </CustomTabs>
+          </Card>
+          <Card>
             <Divider />
             <Box sx={{ p: { xs: 2, md: 3 } }}>
               <Form methods={methods} onSubmit={onSubmit}>

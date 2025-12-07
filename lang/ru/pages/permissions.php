@@ -49,6 +49,12 @@ return [
         'projects_moderation_edit' => 'Модерация проектов — редактирование',
         'projects_moderation_delete' => 'Модерация проектов — удаление',
 
+        'projects_rejected_view' => 'Отклоненные проекты — просмотр',
+        'projects_rejected_edit' => 'Отклоненные проекты — редактирование',
+
+        'projects_active_view' => 'Активные проекты — просмотр',
+        'projects_active_edit' => 'Активные проекты — редактирование',
+
 
     ],
     'modules' => [
@@ -57,5 +63,7 @@ return [
       'permissions' => 'Разрешения',
       'projects' => 'Мои проекты',
       'projects_moderation' => 'Модерация проектов',
+      'projects_rejected' => 'Отклоненные проекты',
+      'projects_active' => 'Активные проекты',
     ],
 ];

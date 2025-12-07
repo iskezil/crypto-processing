@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -14,32 +15,26 @@ class PermissionsSeeder extends Seeder
     {
         app()['cache']->forget('spatie.permission.cache');
 
-        $roles = [ 'ADMIN', 'MANAGER', 'USER'];
+        [$roles, $permissions, $modules] = $this->extractRightsFromTypescript();
 
         foreach ($roles as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
 
-        $modules = ['USERS', 'ROLES','PERMISSIONS', 'PROJECTS', 'PROJECTS_MODERATION'];
-
-        $actions = ['VIEW', 'CREATE', 'EDIT', 'DELETE'];
-
         $createdPermissions = [];
 
-        foreach ($modules as $module) {
-            foreach ($actions as $action) {
-                $permissionName = $module . '_' . $action;
-                $permission = Permission::firstOrCreate(
-                    ['name' => $permissionName, 'guard_name' => 'web'],
-                    ['module' => $module]
-                );
+        foreach ($permissions as $permissionName) {
+            $module = Str::beforeLast($permissionName, '_');
+            $permission = Permission::firstOrCreate(
+                ['name' => $permissionName, 'guard_name' => 'web'],
+                ['module' => $module]
+            );
 
-                if (empty($permission->module)) {
-                    $permission->module = $module;
-                    $permission->save();
-                }
-                $createdPermissions[] = $permissionName;
+            if (empty($permission->module)) {
+                $permission->module = $module;
+                $permission->save();
             }
+            $createdPermissions[] = $permissionName;
         }
 
         $admin = Role::where('name', 'ADMIN')->first();
@@ -55,9 +50,11 @@ class PermissionsSeeder extends Seeder
         $admin?->givePermissionTo($createdPermissions);
 
         $managerPerms = [];
-        foreach ($modules as $module) {
-            foreach (['VIEW', 'EDIT'] as $action) {
-                $managerPerms[] = $module . '_' . $action;
+        foreach ($modules as $module => $modulePermissions) {
+            foreach ($modulePermissions as $permissionName) {
+                if (Str::endsWith($permissionName, ['_VIEW', '_EDIT'])) {
+                    $managerPerms[] = $permissionName;
+                }
             }
         }
 
@@ -66,13 +63,48 @@ class PermissionsSeeder extends Seeder
         }
 
         $userPerms = [];
-        foreach ($modules as $module) {
-            $userPerms[] = $module . '_VIEW';
+        foreach ($modules as $modulePermissions) {
+            foreach ($modulePermissions as $permissionName) {
+                if (Str::endsWith($permissionName, '_VIEW')) {
+                    $userPerms[] = $permissionName;
+                }
+            }
         }
 
         if (!empty($userPerms)) {
             $user?->givePermissionTo($userPerms);
         }
+    }
+
+    private function extractRightsFromTypescript(): array
+    {
+        $rightsPath = resource_path('js/src/enums/rights.ts');
+        $contents = file_get_contents($rightsPath);
+
+        $enumExtractor = static function (string $enumName) use ($contents) {
+            $pattern = sprintf('/export enum %s\s*\{([^}]*)\}/m', $enumName);
+            if (!preg_match($pattern, $contents, $matches)) {
+                return [];
+            }
+
+            return collect(explode("\n", $matches[1]))
+                ->map(static fn ($line) => trim($line))
+                ->filter()
+                ->map(static fn ($line) => Str::before($line, ' '))
+                ->map(static fn ($line) => trim($line, "\t ,"))
+                ->filter()
+                ->values()
+                ->all();
+        };
+
+        $roles = $enumExtractor('ROLE_NAMES');
+        $permissions = $enumExtractor('PERMISSION_NAMES');
+
+        $modules = collect($permissions)
+            ->groupBy(fn ($permission) => Str::beforeLast($permission, '_'))
+            ->all();
+
+        return [$roles, $permissions, $modules];
     }
 }
 

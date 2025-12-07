@@ -6,9 +6,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Label } from 'src/components/label';
+import { Iconify } from 'src/components/iconify';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
@@ -28,10 +30,24 @@ type Project = {
   created_at: string;
 };
 
+type ModerationStatus = 'pending' | 'approved' | 'rejected';
+
 const metadata = { title: `Projects moderation | Dashboard - ${CONFIG.appName}` };
 
-export default function ModerationList({ projects }: { projects: Project[] }) {
+export default function ModerationList({ projects, status }: { projects: Project[]; status: ModerationStatus }) {
   const { __ } = useLang();
+
+  const titles: Record<ModerationStatus, string> = {
+    pending: __('navigation.management.projects_moderation'),
+    rejected: __('navigation.management.projects_rejected'),
+    approved: __('navigation.management.projects_active'),
+  };
+
+  const labelColor: Record<ModerationStatus, 'warning' | 'error' | 'success'> = {
+    pending: 'warning',
+    rejected: 'error',
+    approved: 'success',
+  };
 
   return (
     <>
@@ -39,10 +55,10 @@ export default function ModerationList({ projects }: { projects: Project[] }) {
       <DashboardLayout>
         <DashboardContent maxWidth="xl">
           <CustomBreadcrumbs
-            heading={__('navigation.management.projects_moderation')}
+            heading={titles[status]}
             links={[
               { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
-              { name: __('navigation.management.projects_moderation') },
+              { name: titles[status] },
             ]}
             sx={{ mb: { xs: 3, md: 5 } }}
           />
@@ -58,6 +74,7 @@ export default function ModerationList({ projects }: { projects: Project[] }) {
                     <TableCell>{__('pages/projects.table.status')}</TableCell>
                     <TableCell>{__('pages/projects.table.user')}</TableCell>
                     <TableCell>{__('pages/projects.table.created')}</TableCell>
+                    <TableCell width={120}>{__('pages/projects.table.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -71,10 +88,19 @@ export default function ModerationList({ projects }: { projects: Project[] }) {
                       </TableCell>
                       <TableCell>{project.platform}</TableCell>
                       <TableCell>
-                        <Label color="warning">{__(`pages/projects.status.${project.status}`)}</Label>
+                        <Label color={labelColor[project.status]}>
+                          {__(`pages/projects.status.${project.status}`)}
+                        </Label>
                       </TableCell>
                       <TableCell>{project.user?.email}</TableCell>
                       <TableCell>{project.created_at}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <IconButton href={route('projects.show', project.ulid, false)} color="primary" size="small">
+                            <Iconify icon="solar:eye-bold" width={18} />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
                     </TableRow>
                   ))}
 

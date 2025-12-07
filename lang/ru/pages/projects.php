@@ -12,6 +12,9 @@ return [
         'cancel' => 'Отмена',
         'next' => 'Далее',
         'previous' => 'Назад',
+        'approve' => 'Одобрить',
+        'reject' => 'Отклонить',
+        'back_to_moderation' => 'Вернуть на модерацию',
     ],
     'table' => [
         'name' => 'Название',
@@ -19,6 +22,7 @@ return [
         'status' => 'Статус',
         'created' => 'Создан',
         'user' => 'Пользователь',
+        'actions' => 'Действия',
     ],
     'status' => [
         'pending' => 'На модерации',
@@ -47,6 +51,7 @@ return [
         'token_networks' => 'Криптовалюты проекта',
         'test_mode' => 'Тестовый режим',
         'accept_terms' => 'Я принимаю условия сервиса',
+        'moderation_comment' => 'Комментарий модерации (опционально)',
     ],
     'steps' => [
         'details' => 'Основная информация',
@@ -64,6 +69,8 @@ return [
     ],
     'notifications' => [
         'sent_to_moderation' => 'Проект отправлен на модерацию',
+        'status_changed' => 'Статус проекта обновлен',
+        'status_change_failed' => 'Не удалось обновить статус проекта',
     ],
     'platforms' => [
         'website' => 'Сайт',

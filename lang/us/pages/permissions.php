@@ -48,6 +48,12 @@ return [
         'projects_moderation_view' => 'Project Moderation — View',
         'projects_moderation_edit' => 'Project Moderation — Edit',
         'projects_moderation_delete' => 'Project Moderation — Delete',
+
+        'projects_rejected_view' => 'Rejected Projects — View',
+        'projects_rejected_edit' => 'Rejected Projects — Edit',
+
+        'projects_active_view' => 'Active Projects — View',
+        'projects_active_edit' => 'Active Projects — Edit',
     ],
     'modules' => [
         'users' => 'Users',
@@ -55,5 +61,7 @@ return [
         'permissions' => 'Permissions',
         'projects' => 'My Projects',
         'projects_moderation' => 'Project Moderation',
+        'projects_rejected' => 'Rejected Projects',
+        'projects_active' => 'Active Projects',
     ],
 ];

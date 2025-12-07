@@ -12,6 +12,9 @@ return [
         'cancel' => 'Cancel',
         'next' => 'Next',
         'previous' => 'Back',
+        'approve' => 'Approve',
+        'reject' => 'Reject',
+        'back_to_moderation' => 'Return to moderation',
     ],
     'table' => [
         'name' => 'Name',
@@ -19,6 +22,7 @@ return [
         'status' => 'Status',
         'created' => 'Created at',
         'user' => 'User',
+        'actions' => 'Actions',
     ],
     'status' => [
         'pending' => 'Pending',
@@ -47,6 +51,7 @@ return [
         'token_networks' => 'Project currencies',
         'test_mode' => 'Test mode',
         'accept_terms' => 'I accept service terms',
+        'moderation_comment' => 'Moderation comment (optional)',
     ],
     'steps' => [
         'details' => 'Basic information',
@@ -64,6 +69,8 @@ return [
     ],
     'notifications' => [
         'sent_to_moderation' => 'Project sent for moderation',
+        'status_changed' => 'Project status updated',
+        'status_change_failed' => 'Failed to update project status',
     ],
     'platforms' => [
         'website' => 'Website',

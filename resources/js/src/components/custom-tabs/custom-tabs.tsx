@@ -23,7 +23,6 @@ export type CustomTabsProps = TabsProps & {
 const customTabsStyles: Record<string, SxProps<Theme>> = {
   root: {
     flexShrink: 0,
-    bgcolor: 'background.neutral',
   },
   list: {
     p: 1,

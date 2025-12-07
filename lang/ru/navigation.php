@@ -13,6 +13,9 @@ return [
         'roles' => 'Роли',
         'permissions' => 'Разрешения',
         'projects' => 'Проекты',
-        'projects_moderation' => 'Модерация проектов'
+        'projects_moderation' => 'Модерация проектов',
+        'projects_rejected' => 'Отклоненные проекты',
+        'projects_active' => 'Активные проекты',
+        'projects_count' => 'Количество проектов: :count',
     ],
 ];

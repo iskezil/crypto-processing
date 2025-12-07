@@ -90,6 +90,14 @@ export const Ziggy = {
       uri: 'admin/projects/moderation',
       methods: ['GET', 'HEAD'],
     },
+    'projects_rejected.index': { uri: 'admin/projects/rejected', methods: ['GET', 'HEAD'] },
+    'projects_active.index': { uri: 'admin/projects/active', methods: ['GET', 'HEAD'] },
+    'projects.moderate': {
+      uri: 'admin/projects/{project}/moderate',
+      methods: ['POST'],
+      parameters: ['project'],
+      bindings: { project: 'ulid' },
+    },
 
     register: { uri: 'register', methods: ['GET', 'HEAD'] },
     login: { uri: 'login', methods: ['GET', 'HEAD'] },

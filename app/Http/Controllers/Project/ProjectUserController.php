@@ -192,17 +192,39 @@ class ProjectUserController extends Controller
           'status' => $originalStatus === 'approved' ? 'pending' : $originalStatus,
         ]);
 
-        ProjectTokenNetwork::where('project_id', $project->id)->delete();
+        $existingTokenNetworks = ProjectTokenNetwork::where('project_id', $project->id)
+          ->get()
+          ->keyBy('token_network_id');
 
         foreach ($validated['token_network_ids'] as $index => $tokenNetworkId) {
+          $isDefault = $index === 0;
+
+          if ($existingTokenNetworks->has($tokenNetworkId)) {
+            $existingTokenNetworks[$tokenNetworkId]->update([
+              'enabled' => true,
+              'is_default' => $isDefault,
+              'order' => $index,
+            ]);
+
+            $existingTokenNetworks->forget($tokenNetworkId);
+            continue;
+          }
+
           ProjectTokenNetwork::create([
             'project_id' => $project->id,
             'token_network_id' => $tokenNetworkId,
             'enabled' => true,
-            'is_default' => $index === 0,
+            'is_default' => $isDefault,
             'order' => $index,
           ]);
         }
+
+        $existingTokenNetworks->each(function (ProjectTokenNetwork $projectTokenNetwork) {
+          $projectTokenNetwork->update([
+            'enabled' => false,
+            'is_default' => false,
+          ]);
+        });
 
         if ($originalStatus === 'approved') {
           ProjectModerationLog::create([

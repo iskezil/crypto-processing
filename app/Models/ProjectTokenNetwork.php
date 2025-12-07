@@ -10,6 +10,8 @@ class ProjectTokenNetwork extends Pivot
 {
     use HasFactory;
 
+    protected $table = 'project_token_networks';
+
     protected $fillable = [
       'project_id',
       'token_network_id',

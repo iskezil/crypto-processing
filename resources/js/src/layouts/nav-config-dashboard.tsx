@@ -51,10 +51,12 @@ const ICONS = {
 
 // ----------------------------------------------------------------------
 
+type ProjectsModerationStats = { pending?: number; approved?: number; rejected?: number } | null;
+
 export function useNavData(): NavSectionProps['data'] {
   const { __ } = useLang();
   const { can, canAny } = useAuthz();
-  const { props } = usePage<PageProps & { projectsMenu: any[] }>();
+  const { props } = usePage<PageProps & { projectsMenu: any[]; projectsModerationStats: ProjectsModerationStats }>();
 
   const projectsMenu = (props.projectsMenu || []).map((project) => ({
     title: project.name,
@@ -67,6 +69,8 @@ export function useNavData(): NavSectionProps['data'] {
     approved: 'info',
     rejected: 'error',
   };
+
+  const moderationStats = props.projectsModerationStats || {};
 
   return useMemo(() => {
     const data: NavSectionProps['data'] = [
@@ -88,7 +92,7 @@ export function useNavData(): NavSectionProps['data'] {
               ...projectsMenu.map((project) => ({
                 title: project.title,
                 path: project.path,
-                icon: (
+                info: (
                   <Label color={projectStatusColor[project.status] ?? 'info'}>
                     {__(`pages/projects.status.${project.status}`)}
                   </Label>
@@ -136,12 +140,37 @@ export function useNavData(): NavSectionProps['data'] {
             title: __('navigation.management.projects'),
             path: route('projects_moderation.index', undefined, false),
             icon: ICONS.kanban,
-            anyOf: ['PROJECTS_MODERATION_VIEW'],
+            anyOf: ['PROJECTS_MODERATION_VIEW', 'PROJECTS_REJECTED_VIEW', 'PROJECTS_ACTIVE_VIEW'],
             children: [
               {
                 title: __('navigation.management.projects_moderation'),
                 path: route('projects_moderation.index', undefined, false),
                 permission: 'PROJECTS_MODERATION_VIEW',
+                info: (
+                  <Label color="warning">
+                    { moderationStats.pending ?? 0}
+                  </Label>
+                ),
+              },
+              {
+                title: __('navigation.management.projects_rejected'),
+                path: route('projects_rejected.index', undefined, false),
+                permission: 'PROJECTS_REJECTED_VIEW',
+                info: (
+                  <Label color="error">
+                    { moderationStats.rejected ?? 0}
+                  </Label>
+                ),
+              },
+              {
+                title: __('navigation.management.projects_active'),
+                path: route('projects_active.index', undefined, false),
+                permission: 'PROJECTS_ACTIVE_VIEW',
+                info: (
+                  <Label color="success">
+                    { moderationStats.approved ?? 0}
+                  </Label>
+                ),
               },
             ],
           },
