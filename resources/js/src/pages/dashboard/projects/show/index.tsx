@@ -3,100 +3,39 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 
-import Card from '@mui/material/Card';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
-import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Tab from '@mui/material/Tab';
-import { tabClasses } from '@mui/material/Tab';
-import type { Theme } from '@mui/material/styles';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
+import Card from '@mui/material/Card';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-
-import Timeline from '@mui/lab/Timeline';
-import TimelineItem from '@mui/lab/TimelineItem';
-import TimelineSeparator from '@mui/lab/TimelineSeparator';
-import TimelineDot from '@mui/lab/TimelineDot';
-import TimelineConnector from '@mui/lab/TimelineConnector';
-import TimelineContent from '@mui/lab/TimelineContent';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
-import { CustomTabs } from 'src/components/custom-tabs';
 import { Iconify } from 'src/components/iconify';
 import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
-import { Field, Form } from 'src/components/hook-form';
+import { Form } from 'src/components/hook-form';
 import { toast } from 'src/components/snackbar';
 import { useAuthz } from 'src/lib/authz';
 import axiosInstance from 'src/lib/axios';
-import { CurrenciesStep } from '../create/components/CurrenciesStep';
-import { DetailsStep } from '../create/components/DetailsStep';
-import { LinksStep } from '../create/components/LinksStep';
-import { FormRow } from '../create/components/FormRow';
+import { CurrenciesStep, DetailsStep, LinksStep } from '../components/form';
 import { projectSchema, type ProjectFormValues } from '../create/schema';
-import { varAlpha } from 'minimal-shared/utils';
-
-// ----------------------------------------------------------------------
-
-type ModerationLog = {
-  id: number;
-  status: string;
-  comment: string | null;
-  moderator?: { id: number; name: string; email: string } | null;
-  created_at: string;
-};
-
-type ProjectApiKey = {
-  id: number;
-  plain_text_token?: string | null;
-  secret?: string | null;
-  status: 'moderation' | 'active' | 'rejected' | 'revoked';
-  revoked_at?: string | null;
-  created_at: string;
-};
-
-type TokenNetwork = {
-  id: number;
-  full_code: string;
-  stable_coin?: boolean;
-  token?: { name?: string; code?: string; icon_path?: string; icon_url?: string };
-  network?: { name?: string; code?: string; icon_path?: string; icon_url?: string; network?: string };
-};
-
-type BreadcrumbLink = { name: string; href?: string };
-
-type Project = {
-  id: number;
-  ulid: string;
-  name: string;
-  status: 'pending' | 'approved' | 'rejected';
-  activity_type?: string;
-  description?: string | null;
-  platform?: ProjectFormValues['platform'];
-  project_url?: string | null;
-  success_url?: string | null;
-  fail_url?: string | null;
-  notify_url?: string | null;
-  logo?: string | null;
-  moderation_logs?: ModerationLog[];
-  token_networks?: TokenNetwork[];
-  api_keys?: ProjectApiKey[];
-  service_fee?: number | null;
-};
+import { type BreadcrumbLink, type Project, type ProjectApiKey, type TokenNetwork } from '../types';
+import { IntegrationSection } from './components/IntegrationSection';
+import { ProjectTabs, type ProjectTab } from './components/ProjectTabs';
+import { HistorySection } from './components/HistorySection';
+import { FeesSection } from './components/FeesSection';
+import { ModerationActions } from './components/ModerationActions';
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
 
@@ -160,37 +99,8 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     rejected: 'error',
   };
 
-  const tabSx = (theme: Theme) => ({
-    borderRadius: 1,
-    minHeight: 44,
-    px: 1.5,
-    fontWeight: 600,
-    fontSize: 14,
-    textTransform: 'none',
-
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    color: theme.vars.palette.text.secondary,
-    backgroundColor: 'transparent',
-    transition: theme.transitions.create(['background-color', 'color'], {
-      duration: theme.transitions.duration.shorter,
-    }),
-    '&:hover': {
-      backgroundColor: theme.vars.palette.action.hover,
-    },
-    [`&.${tabClasses.selected}`]: {
-      color: theme.vars.palette.primary.main,
-      backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
-      '&:hover': {
-        backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.16),
-      },
-    },
-  });
-
-  const tabs = useMemo(() => {
-    const items = [
+  const tabs: ProjectTab[] = useMemo(() => {
+    const items: ProjectTab[] = [
       { value: 'details', label: __('pages/projects.steps.details') },
       { value: 'links', label: __('pages/projects.steps.links') },
       { value: 'currencies', label: __('pages/projects.steps.currencies') },
@@ -234,7 +144,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
 
   const platform = watch('platform');
   const projectUrlLabel = __(platformLabels[platform]);
-  const latestModeration = project.moderation_logs?.[project.moderation_logs.length - 1];
   const paymentPageLink = route('pos.show', project.ulid, false);
 
   const breadcrumbLinks: BreadcrumbLink[] =
@@ -288,11 +197,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
 
   const handleCopyApiKey = async () => {
     if (!activeApiKey) return;
-    copyValue(
-      activeApiKey.plain_text_token || '',
-      setIsApiKeyCopied,
-      __('pages/projects.notifications.api_key_copied')
-    );
+    copyValue(activeApiKey.plain_text_token || '', setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
   };
 
   const handleCopySecret = async (secret: string) =>
@@ -402,93 +307,24 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       <title>{metadata.title}</title>
       <DashboardLayout>
         <DashboardContent maxWidth={false}>
-          <CustomBreadcrumbs
-            heading={project.name}
-            links={breadcrumbLinks}
-            sx={{ mb: { xs: 3, md: 5 } }}
+          <CustomBreadcrumbs heading={project.name} links={breadcrumbLinks} sx={{ mb: { xs: 3, md: 5 } }} />
+
+          <ModerationActions
+            canModerate={canModerate}
+            status={project.status}
+            moderationComment={moderationComment}
+            onChangeComment={setModerationComment}
+            onModerate={handleModeration}
+            labels={{
+              comment: __('pages/projects.form.moderation_comment'),
+              approve: __('pages/projects.actions.approve'),
+              reject: __('pages/projects.actions.reject'),
+              backToModeration: __('pages/projects.actions.back_to_moderation'),
+            }}
           />
-          {canModerate && (
-          <Card sx={{ p: 3, mb: 3 }}>
-              <Stack spacing={2} sx={{ mt: 3 }}>
-                <TextField
-                  label={__('pages/projects.form.moderation_comment')}
-                  multiline
-                  minRows={2}
-                  value={moderationComment}
-                  onChange={(event) => setModerationComment(event.target.value)}
-                />
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                  {project.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleModeration('approve')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.approve')}
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        onClick={() => handleModeration('reject')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.reject')}
-                      </Button>
-                    </>
-                  )}
-
-                  {project.status === 'rejected' && (
-                    <>
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        onClick={() => handleModeration('to_pending')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.back_to_moderation')}
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleModeration('approve')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.approve')}
-                      </Button>
-                    </>
-                  )}
-
-                  {project.status === 'approved' && (
-                    <>
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        onClick={() => handleModeration('to_pending')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.back_to_moderation')}
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        onClick={() => handleModeration('reject')}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {__('pages/projects.actions.reject')}
-                      </Button>
-                    </>
-                  )}
-                </Stack>
-              </Stack>
-          </Card>
-          )}
           {!isAdminView && project.status === 'pending' && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              {__('pages/projects.alerts.pending')}
-            </Alert>
+            <ModerationActions.PendingAlert>{__('pages/projects.alerts.pending')}</ModerationActions.PendingAlert>
           )}
 
           {!isAdminView && project.status === 'rejected' && rejectionLog?.comment && (
@@ -498,31 +334,9 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
           )}
 
           <Card sx={{ mb: 2 }}>
-            <CustomTabs
-                value={currentTab}
-                onChange={handleTabChange}
-                variant="scrollable"
-                allowScrollButtonsMobile
-                slotProps={{
-                  indicator: { sx: { display: 'none' } },
-                  indicatorContent: { sx: { display: 'none' } },
-                }}
-            >
-              {tabs.map((tab) => (
-                  <Tab
-                    key={tab.value}
-                    value={tab.value}
-                    label={tab.label}
-                    disabled={tab.disabled}
-                    sx={tabSx}
-                  />
-              ))}
-            </CustomTabs>
-
-
-
-
+            <ProjectTabs value={currentTab} tabs={tabs} onChange={handleTabChange} />
           </Card>
+
           <Card>
             <Divider />
             <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -566,236 +380,33 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                   )}
 
                   {currentTab === 'integration' && (
-                    <Stack spacing={3}>
-                      {!integrationAvailable ? (
-                        <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
-                      ) : (
-                        <Stack spacing={3}>
-                          <Stack
-                            direction={{ xs: 'column', md: 'row' }}
-                            spacing={3}
-                            alignItems={{ md: 'flex-start' }}
-                          >
-                            <Stack spacing={1} flex={{ md: '1 1 40%' }}>
-                              <Typography variant="h6">{__('pages/projects.integration.api_keys_title')}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {__('pages/projects.integration.api_keys_hint')}
-                              </Typography>
-                            </Stack>
-
-                            <Stack spacing={2} flex={{ md: '1 1 60%' }}>
-                              {activeApiKey ? (
-                                <>
-                                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                                    <Chip
-                                      color={apiKeyStatusColors[activeApiKey.status]}
-                                      label={apiKeyStatusLabels[activeApiKey.status]}
-                                    />
-                                    <Typography variant="caption" color="text.secondary">
-                                      {__('pages/projects.integration.generated_at', { date: activeApiKey.created_at })}
-                                    </Typography>
-                                  </Stack>
-
-                                  <TextField
-                                    label={__('pages/projects.integration.api_key')}
-                                    value={activeApiKey.plain_text_token || ''}
-                                    InputProps={{
-                                      readOnly: true,
-                                      endAdornment: (
-                                        <InputAdornment position="end">
-                                          <IconButton
-                                            color={isApiKeyCopied ? 'success' : 'default'}
-                                            onClick={handleCopyApiKey}
-                                            disabled={!activeApiKey.plain_text_token}
-                                          >
-                                            <Iconify icon="solar:copy-bold" width={18} />
-                                          </IconButton>
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-
-                                  <TextField
-                                    label={__('pages/projects.integration.shop_id')}
-                                    value={project.ulid}
-                                    InputProps={{
-                                      readOnly: true,
-                                      endAdornment: (
-                                        <InputAdornment position="end">
-                                          <IconButton
-                                            color={isShopIdCopied ? 'success' : 'default'}
-                                            onClick={handleCopyShopId}
-                                          >
-                                            <Iconify icon="solar:copy-bold" width={18} />
-                                          </IconButton>
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-
-                                  <TextField
-                                    label={__('pages/projects.integration.api_secret')}
-                                    value={__('pages/projects.integration.secret_placeholder')}
-                                    InputProps={{
-                                      readOnly: true,
-                                      startAdornment: (
-                                        <InputAdornment position="start">
-                                          <Iconify icon="solar:lock-keyhole-bold-duotone" width={20} />
-                                        </InputAdornment>
-                                      ),
-                                      endAdornment: (
-                                        <InputAdornment position="end">
-                                          <Button
-                                            size="small"
-                                            color="primary"
-                                            startIcon={<Iconify icon="solar:add-circle-bold" width={18} />}
-                                            onClick={handleGenerateSecret}
-                                            disabled={isGeneratingSecret}
-                                          >
-                                            {__('pages/projects.integration.generate_secret')}
-                                          </Button>
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                </>
-                              ) : (
-                                <Alert severity="warning">{__('pages/projects.integration.api_key_missing')}</Alert>
-                              )}
-                            </Stack>
-                          </Stack>
-
-                        </Stack>
-                      )}
-
-                      <Divider />
-
-                      <Stack spacing={2}>
-                        <Typography variant="h6">{__('pages/projects.integration.project_data_title')}</Typography>
-
-                        <FormRow
-                          title="Успешный URL:"
-                          description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
-                        >
-                          <Field.Text name="success_url" placeholder="https://" />
-                        </FormRow>
-
-                        <FormRow
-                          title="Неудачный URL:"
-                          description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
-                        >
-                          <Field.Text name="fail_url" placeholder="https://" />
-                        </FormRow>
-
-                        <FormRow
-                          title="URL для уведомлений"
-                          description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
-                        >
-                          <Field.Text name="notify_url" placeholder="https://" />
-                        </FormRow>
-                      </Stack>
-                    </Stack>
+                    <IntegrationSection
+                      __={__}
+                      integrationAvailable={integrationAvailable}
+                      activeApiKey={activeApiKey}
+                      apiKeyStatusLabels={apiKeyStatusLabels}
+                      apiKeyStatusColors={apiKeyStatusColors}
+                      projectUlid={project.ulid}
+                      isApiKeyCopied={isApiKeyCopied}
+                      isShopIdCopied={isShopIdCopied}
+                      isGeneratingSecret={isGeneratingSecret}
+                      onCopyApiKey={handleCopyApiKey}
+                      onCopyShopId={handleCopyShopId}
+                      onGenerateSecret={handleGenerateSecret}
+                    />
                   )}
 
                   {currentTab === 'fees' && (
-                    <>
-                      {!integrationAvailable ? (
-                        <Alert severity="info">{__('pages/projects.integration.fees_placeholder')}</Alert>
-                      ) : (
-                        <Stack spacing={1}>
-                          <Typography variant="subtitle2">
-                            {__('pages/projects.integration.fees_title')}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {project.service_fee != null
-                              ? __('pages/projects.integration.fees_value', { value: project.service_fee })
-                              : __('pages/projects.integration.fees_not_set')}
-                          </Typography>
-                        </Stack>
-                      )}
-                    </>
+                    <FeesSection __={__} integrationAvailable={integrationAvailable} serviceFee={project.service_fee} />
                   )}
 
                   {currentTab === 'history' && showModerationHistory && (
-                    <Stack spacing={2}>
-                      {(project.moderation_logs ?? []).length === 0 && (
-                        <Alert severity="info">{__('pages/projects.integration.history_empty')}</Alert>
-                      )}
-
-                      {(project.moderation_logs ?? []).length > 0 && (
-                        <Timeline sx={{ p: 0 }}>
-                          {(project.moderation_logs ?? []).map((log, index) => {
-                            const color = moderationStatusColors[log.status] || 'warning';
-                            return (
-                              <TimelineItem key={log.id}>
-                                <TimelineSeparator>
-                                  <TimelineDot color={color} />
-                                  {index < (project.moderation_logs?.length ?? 0) - 1 && <TimelineConnector />}
-                                </TimelineSeparator>
-                                <TimelineContent>
-                                  <Stack spacing={0.5}>
-                                    <Typography variant="subtitle2">
-                                      {__(`pages/projects.status.${log.status}`)}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {log.created_at}
-                                    </Typography>
-                                    {log.moderator && (
-                                      <Typography variant="body2">
-                                        {__('pages/projects.integration.moderator', { name: log.moderator.name })}
-                                      </Typography>
-                                    )}
-                                    {log.comment && (
-                                      <Typography variant="body2" color="text.secondary">
-                                        {log.comment}
-                                      </Typography>
-                                    )}
-                                  </Stack>
-                                </TimelineContent>
-                              </TimelineItem>
-                            );
-                          })}
-                        </Timeline>
-                      )}
-
-                      {revokedKeys.length > 0 && (
-                        <Accordion>
-                          <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-linear" width={18} />}>
-                            <Typography variant="subtitle2">
-                              {__('pages/projects.integration.revoked_keys')}
-                            </Typography>
-                          </AccordionSummary>
-
-                          <AccordionDetails>
-                            <Timeline sx={{ p: 0 }}>
-                              {revokedKeys.map((key, index) => (
-                                <TimelineItem key={key.id}>
-                                  <TimelineSeparator>
-                                    <TimelineDot color="info" />
-                                    {index < revokedKeys.length - 1 && <TimelineConnector />}
-                                  </TimelineSeparator>
-                                  <TimelineContent>
-                                    <Stack spacing={0.5}>
-                                      <Typography variant="subtitle2">
-                                        {__('pages/projects.integration.revoked_key_item', {
-                                          date: key.revoked_at ?? key.created_at,
-                                        })}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {__('pages/projects.integration.generated_at', { date: key.created_at })}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {__('pages/projects.integration.key', { key: key.secret })}
-                                      </Typography>
-                                    </Stack>
-                                  </TimelineContent>
-                                </TimelineItem>
-                              ))}
-                            </Timeline>
-                          </AccordionDetails>
-                        </Accordion>
-                      )}
-                    </Stack>
+                    <HistorySection
+                      __={__}
+                      moderationLogs={project.moderation_logs ?? []}
+                      revokedKeys={revokedKeys}
+                      statusColors={moderationStatusColors}
+                    />
                   )}
 
                   {currentTab !== 'fees' && currentTab !== 'history' && (
@@ -831,7 +442,10 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                     readOnly: true,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton color={isSecretCopied ? 'success' : 'default'} onClick={() => handleCopySecret(generatedSecret)}>
+                        <IconButton
+                          color={isSecretCopied ? 'success' : 'default'}
+                          onClick={() => handleCopySecret(generatedSecret)}
+                        >
                           <Iconify icon="solar:copy-bold" width={18} />
                         </IconButton>
                       </InputAdornment>

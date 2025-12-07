@@ -21,20 +21,11 @@ import { route } from 'src/routes/route';
 import type { PageProps } from '@inertiajs/core';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
-import { CurrenciesStep } from './components/CurrenciesStep';
-import { DetailsStep } from './components/DetailsStep';
-import { LinksStep } from './components/LinksStep';
+import { CurrenciesStep, DetailsStep, LinksStep } from '../components/form';
 import { projectSchema, type ProjectFormValues } from './schema';
+import { type TokenNetwork } from '../types';
 
 // ----------------------------------------------------------------------
-
-type TokenNetwork = {
-  id: number;
-  full_code: string;
-  stable_coin: boolean;
-  token?: { name: string; code: string; icon_path?: string; icon_url?: string };
-  network?: { name: string; code: string; icon_path?: string; icon_url?: string; network?: string };
-};
 
 const metadata = { title: `Create project | Dashboard - ${CONFIG.appName}` };
 
