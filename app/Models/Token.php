@@ -24,6 +24,18 @@ class Token extends Model
       'is_archived' => 'boolean',
     ];
 
+    protected $appends = [
+      'icon_url',
+    ];
+
+    public function getIconUrlAttribute(): ?string
+    {
+      if (! $this->icon_path) {
+        return null;
+      }
+      return asset($this->icon_path);
+    }
+
     public function tokenNetworks()
     {
       return $this->hasMany(TokenNetwork::class);

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TokenNetwork extends Model
 {
@@ -38,39 +41,34 @@ class TokenNetwork extends Model
       'sweep_fee_percent'  => 'decimal:2',
     ];
 
-    public function token()
+    public function token(): BelongsTo
     {
       return $this->belongsTo(Token::class);
     }
 
-    public function network()
+    public function network(): BelongsTo
     {
       return $this->belongsTo(Network::class);
     }
 
-    public function projectTokenNetworks()
-    {
-      return $this->hasMany(ProjectTokenNetwork::class);
-    }
-
-    public function projects()
+    public function projects(): BelongsToMany
     {
       return $this->belongsToMany(Project::class, 'project_token_networks')
         ->using(ProjectTokenNetwork::class)
         ->withPivot(['enabled', 'is_default', 'order', 'created_at', 'updated_at']);
     }
 
-    public function invoices()
+    public function invoices(): HasMany
     {
       return $this->hasMany(Invoice::class);
     }
 
-    public function hdWallets()
+    public function hdWallets(): HasMany
     {
       return $this->hasMany(HdWallet::class);
     }
 
-    public function depositEvents()
+    public function depositEvents(): HasMany
     {
       return $this->hasMany(DepositEvent::class);
     }

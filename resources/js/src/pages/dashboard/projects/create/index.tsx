@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,6 @@ import MenuItem from '@mui/material/MenuItem';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Paper from '@mui/material/Paper';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Stepper from '@mui/material/Stepper';
 import Typography from '@mui/material/Typography';
@@ -27,6 +26,7 @@ import { route } from 'src/routes/route';
 import type { PageProps } from '@inertiajs/core';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
+import { TokenNetworkAvatar } from 'src/pages/dashboard/projects/components';
 
 // ----------------------------------------------------------------------
 
@@ -34,8 +34,8 @@ type TokenNetwork = {
   id: number;
   full_code: string;
   stable_coin: boolean;
-  token?: { name: string; code: string; icon_path?: string };
-  network?: { name: string; code: string; icon_path?: string };
+  token?: { name: string; code: string; icon_path?: string; icon_url?: string };
+  network?: { name: string; code: string; icon_path?: string; icon_url?: string; network?: string };
 };
 
 type FormValues = {
@@ -61,6 +61,29 @@ const platformLabels: Record<FormValues['platform'], string> = {
   vk_bot: 'pages/projects.form.project_url_vk',
   other: 'pages/projects.form.project_url_other',
 };
+
+type FormRowProps = {
+  title: string;
+  description: string;
+  children: ReactNode;
+};
+
+function FormRow({ title, description, children }: FormRowProps) {
+  return (
+    <Grid container spacing={2.5} alignItems="flex-start">
+      <Grid size={{ xs: 12, md: 6 }}>
+        <Stack spacing={0.75}>
+          <Typography variant="subtitle1">{title}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {description}
+          </Typography>
+        </Stack>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>{children}</Grid>
+    </Grid>
+  );
+}
 
 export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenNetwork[] }) {
   const { __ } = useLang();
@@ -207,49 +230,80 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                     <Divider sx={{ my: 1 }} />
 
                     {activeStep === 0 && (
-                      <Stack spacing={2.5}>
+                      <Stack spacing={3}>
                         <Typography variant="h6">{steps[0].label}</Typography>
-                        <Field.Text
-                          name="name"
-                          label={__('pages/projects.form.name')}
-                          placeholder={__('pages/projects.form.name')}
-                        />
-                        <Field.Text
-                          name="activity_type"
-                          label={__('pages/projects.form.activity_type')}
-                          placeholder={__('pages/projects.form.activity_type')}
-                        />
-                        <Field.Text
-                          name="description"
-                          label={__('pages/projects.form.description')}
-                          multiline
-                          minRows={4}
-                          helperText={__('pages/projects.helpers.description')}
-                        />
+
+                        <FormRow
+                          title="Название проекта"
+                          description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
+                        >
+                          <Field.Text name="name" placeholder={__('pages/projects.form.name')} />
+                        </FormRow>
+
+                        <FormRow
+                          title="Вид деятельности"
+                          description="Наиболее подходящее обозначение вашей деятельности (интернет-магазин / онлайн-школа / сервис или платформа / цифровые товары / Telegram-бот и прочее)."
+                        >
+                          <Field.Text name="activity_type" placeholder={__('pages/projects.form.activity_type')} />
+                        </FormRow>
+
+                        <FormRow
+                          title="Описание проекта"
+                          description="Расскажите кратко и понятно о вашем проекте: укажите продукт или услугу, целевую аудиторию и формат продажи."
+                        >
+                          <Field.Text name="description" multiline minRows={4} />
+                        </FormRow>
                       </Stack>
                     )}
 
                     {activeStep === 1 && (
-                      <Stack spacing={2.5}>
+                      <Stack spacing={3}>
                         <Typography variant="h6">{steps[1].label}</Typography>
-                        <Field.Select name="platform" label={__('pages/projects.form.platform')}>
-                          <MenuItem value="website">{__('pages/projects.platforms.website')}</MenuItem>
-                          <MenuItem value="telegram_bot">{__('pages/projects.platforms.telegram_bot')}</MenuItem>
-                          <MenuItem value="vk_bot">{__('pages/projects.platforms.vk_bot')}</MenuItem>
-                          <MenuItem value="other">{__('pages/projects.platforms.other')}</MenuItem>
-                        </Field.Select>
-                        <Field.Text name="project_url" label={projectUrlLabel} />
-                        <Grid container spacing={2}>
-                          <Grid size={{ xs: 12, md: 6 }}>
-                            <Field.Text name="success_url" label={__('pages/projects.form.success_url')} />
-                          </Grid>
-                          <Grid size={{ xs: 12, md: 6 }}>
-                            <Field.Text name="fail_url" label={__('pages/projects.form.fail_url')} />
-                          </Grid>
-                        </Grid>
-                        <Field.Text name="notify_url" label={__('pages/projects.form.notify_url')} />
-                        <Stack spacing={1}>
-                          <Typography variant="subtitle1">{__('pages/projects.form.logo')}</Typography>
+
+                        <FormRow
+                          title="Платформа проекта"
+                          description="Выбирите платформу проекта."
+                        >
+                          <Field.Select name="platform">
+                            <MenuItem value="website">{__('pages/projects.platforms.website')}</MenuItem>
+                            <MenuItem value="telegram_bot">{__('pages/projects.platforms.telegram_bot')}</MenuItem>
+                            <MenuItem value="vk_bot">{__('pages/projects.platforms.vk_bot')}</MenuItem>
+                            <MenuItem value="other">{__('pages/projects.platforms.other')}</MenuItem>
+                          </Field.Select>
+                        </FormRow>
+
+                        <FormRow
+                          title={projectUrlLabel}
+                          description="Ссылка на сайт, на котором вы хотите принимать платежи. Для корректности интеграции, пожалуйста, указывайте верные данные."
+                        >
+                          <Field.Text name="project_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="Успешный URL:"
+                          description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
+                        >
+                          <Field.Text name="success_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="Неудачный URL:"
+                          description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
+                        >
+                          <Field.Text name="fail_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="URL для уведомлений"
+                          description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
+                        >
+                          <Field.Text name="notify_url" placeholder="https://" />
+                        </FormRow>
+
+                        <FormRow
+                          title="Логотип на платежной странице"
+                          description="Допустимые форматы: png, jpeg. Максимальный вес файла: 2МБ. Соотношение сторон: 3x1"
+                        >
                           <Field.Upload
                             name="logo"
                             placeholder={
@@ -265,7 +319,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                               wrapper: { sx: { maxWidth: 520, alignSelf: 'stretch' } },
                             }}
                           />
-                        </Stack>
+                        </FormRow>
                       </Stack>
                     )}
 
@@ -280,7 +334,13 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                               <Grid container spacing={2}>
                                 {tokenNetworks.map((network) => {
                                   const selected = field.value.includes(network.id);
-                                  const icon = network.token?.icon_path || network.network?.icon_path;
+                                  const tokenIcon = network.token?.icon_url;
+                                  const networkIcon = network.network?.icon_url;
+                                  const networkLabel =
+                                    network.network?.network ||
+                                    network.network?.name ||
+                                    network.network?.code ||
+                                    network.full_code;
 
                                   return (
                                     <Grid key={network.id} size={{ xs: 12, sm: 6, md: 4 }}>
@@ -306,15 +366,17 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                                           '&:hover': { boxShadow: (theme) => theme.customShadows?.z8 },
                                         }}
                                       >
-                                        <Avatar src={icon || undefined} alt={network.token?.name || network.network?.name}>
-                                          <Iconify icon="solar:wallet-bold" width={20} />
-                                        </Avatar>
+                                        <TokenNetworkAvatar
+                                          tokenIcon={tokenIcon}
+                                          networkIcon={networkIcon}
+                                          name={network.token?.name || network.network?.name}
+                                        />
                                         <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                                           <Typography variant="subtitle2">
                                             {network.token?.name || network.network?.name || network.full_code}
                                           </Typography>
                                           <Typography variant="body2" color="text.secondary">
-                                            {network.full_code}
+                                            {networkLabel}
                                           </Typography>
                                         </Stack>
                                         <Iconify

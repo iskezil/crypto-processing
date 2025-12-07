@@ -27,8 +27,20 @@ class Network extends Model
       'is_public' => 'boolean',
     ];
 
+    protected $appends = [
+      'icon_url',
+    ];
+
     public function tokenNetworks()
     {
       return $this->hasMany(TokenNetwork::class);
     }
+
+  public function getIconUrlAttribute(): ?string
+  {
+    if (! $this->icon_path) {
+      return null;
+    }
+    return asset($this->icon_path);
+  }
 }

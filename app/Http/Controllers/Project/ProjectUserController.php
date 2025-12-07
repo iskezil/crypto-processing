@@ -130,7 +130,11 @@ class ProjectUserController extends Controller
         403
       );
 
-      $project->load(['moderationLogs.moderator:id,name,email']);
+      $project->load([
+        'moderationLogs.moderator:id,name,email',
+        'tokenNetworks.token',
+        'tokenNetworks.network',
+      ]);
 
       return Inertia::render('dashboard/projects/show', [
         'project' => $project,
