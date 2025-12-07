@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'title' => 'Платежи',
+    'title_admin' => 'Платежи (управление)',
+    'breadcrumbs' => [
+        'dashboard' => 'Главная',
+        'payments' => 'Платежи',
+    ],
+    'search' => 'Поиск...',
+    'export' => 'Экспорт',
+    'settings' => 'Настройки',
+    'close' => 'Закрыть',
+    'save' => 'Сохранить',
+    'filters' => [
+        'project' => 'Проекты',
+        'currency' => 'Валюта',
+        'status' => 'Статус',
+        'date_range' => 'Диапазон дат',
+        'clear' => 'Сбросить',
+        'all' => 'Все',
+    ],
+    'table' => [
+        'status' => 'Статус',
+        'currency' => 'Валюта',
+        'amount' => 'Сумма счета',
+        'amount_usd' => 'Сумма счета USD',
+        'paid' => 'Поступило',
+        'service_fee' => 'Комиссия сервиса',
+        'transfer_fee' => 'Комиссия за трансфер валюты',
+        'credited' => 'Зачислено',
+        'credited_usd' => 'Зачислено USD',
+        'txids' => 'TXIDS',
+        'number' => 'Номер счета',
+        'project' => 'Проект',
+        'date' => 'Дата',
+    ],
+    'statuses' => [
+        'created' => 'Создан',
+        'canceled' => 'Отменен',
+        'paid' => 'Оплачен',
+        'partial' => 'Частично оплачен',
+        'overpaid' => 'Переплата',
+    ],
+];

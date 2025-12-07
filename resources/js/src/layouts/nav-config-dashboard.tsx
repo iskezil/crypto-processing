@@ -106,6 +106,13 @@ export function useNavData(): NavSectionProps['data'] {
               },
             ],
           },
+          {
+            title: __('navigation.overview.payments'),
+            path: route('payments.index', undefined, false),
+            icon: ICONS.invoice,
+            permission: 'PAYMENTS_VIEW',
+            deepMatch: true,
+          },
         ],
       },
       {
@@ -135,6 +142,13 @@ export function useNavData(): NavSectionProps['data'] {
                 permission: 'PERMISSIONS_VIEW',
               },
             ],
+          },
+          {
+            title: __('navigation.management.payments'),
+            path: route('payments.admin', undefined, false),
+            icon: ICONS.invoice,
+            permission: 'PAYMENTS_ADMIN_VIEW',
+            deepMatch: true,
           },
           {
             title: __('navigation.management.projects'),

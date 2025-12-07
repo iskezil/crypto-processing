@@ -54,6 +54,9 @@ return [
 
         'projects_active_view' => 'Active Projects — View',
         'projects_active_edit' => 'Active Projects — Edit',
+
+        'payments_view' => 'Payments — View',
+        'payments_admin_view' => 'Payments (management) — View',
     ],
     'modules' => [
         'users' => 'Users',
@@ -63,5 +66,7 @@ return [
         'projects_moderation' => 'Project Moderation',
         'projects_rejected' => 'Rejected Projects',
         'projects_active' => 'Active Projects',
+        'payments' => 'Payments',
+        'payments_admin' => 'Payments (management)',
     ],
 ];

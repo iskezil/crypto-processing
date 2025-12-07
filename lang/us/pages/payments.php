@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'title' => 'Payments',
+    'title_admin' => 'Payments (management)',
+    'breadcrumbs' => [
+        'dashboard' => 'Dashboard',
+        'payments' => 'Payments',
+    ],
+    'search' => 'Search...',
+    'export' => 'Export',
+    'settings' => 'Settings',
+    'close' => 'Close',
+    'save' => 'Save',
+    'filters' => [
+        'project' => 'Projects',
+        'currency' => 'Currency',
+        'status' => 'Status',
+        'date_range' => 'Date range',
+        'clear' => 'Clear',
+        'all' => 'All',
+    ],
+    'table' => [
+        'status' => 'Status',
+        'currency' => 'Currency',
+        'amount' => 'Invoice amount',
+        'amount_usd' => 'Invoice amount USD',
+        'paid' => 'Received',
+        'service_fee' => 'Service fee',
+        'transfer_fee' => 'Transfer fee',
+        'credited' => 'Credited',
+        'credited_usd' => 'Credited USD',
+        'txids' => 'TXIDS',
+        'number' => 'Invoice number',
+        'project' => 'Project',
+        'date' => 'Date',
+    ],
+    'statuses' => [
+        'created' => 'Created',
+        'canceled' => 'Canceled',
+        'paid' => 'Paid',
+        'partial' => 'Partial payment',
+        'overpaid' => 'Overpayment',
+    ],
+];

@@ -55,6 +55,9 @@ return [
         'projects_active_view' => 'Активные проекты — просмотр',
         'projects_active_edit' => 'Активные проекты — редактирование',
 
+        'payments_view' => 'Платежи — просмотр',
+        'payments_admin_view' => 'Платежи (управление) — просмотр',
+
 
     ],
     'modules' => [
@@ -65,5 +68,7 @@ return [
       'projects_moderation' => 'Модерация проектов',
       'projects_rejected' => 'Отклоненные проекты',
       'projects_active' => 'Активные проекты',
+      'payments' => 'Платежи',
+      'payments_admin' => 'Платежи (управление)',
     ],
 ];

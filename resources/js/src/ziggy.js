@@ -123,6 +123,11 @@ export const Ziggy = {
       bindings: { project: 'ulid' },
     },
 
+    'payments.index': { uri: 'payments', methods: ['GET', 'HEAD'] },
+    'payments.export': { uri: 'payments/export', methods: ['GET', 'HEAD'] },
+    'payments.admin': { uri: 'admin/payments', methods: ['GET', 'HEAD'] },
+    'payments.admin.export': { uri: 'admin/payments/export', methods: ['GET', 'HEAD'] },
+
     register: { uri: 'register', methods: ['GET', 'HEAD'] },
     login: { uri: 'login', methods: ['GET', 'HEAD'] },
     'password.request': { uri: 'forgot-password', methods: ['GET', 'HEAD'] },

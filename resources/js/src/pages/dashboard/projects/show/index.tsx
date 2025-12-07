@@ -70,13 +70,16 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   const [generatedSecret, setGeneratedSecret] = useState('');
   const [isGeneratingSecret, setIsGeneratingSecret] = useState(false);
 
+  // 🔴 ДОБАВИЛ ref ДЛЯ ИНПУТА С СЕКРЕТОМ
+  const secretInputRef = useRef<HTMLInputElement | null>(null);
+
   const isAdminView = viewMode === 'admin';
   const [apiKeys, setApiKeys] = useState<ProjectApiKey[]>(project.api_keys ?? []);
   const activeApiKey = apiKeys.find((key) => key.status !== 'revoked') ?? apiKeys[0];
   const revokedKeys = apiKeys.filter((key) => key.status === 'revoked');
   const rejectionLog = [...(project.moderation_logs ?? [])]
-    .reverse()
-    .find((log) => log.status === 'rejected' && log.comment);
+      .reverse()
+      .find((log) => log.status === 'rejected' && log.comment);
   const integrationAvailable = project.status === 'approved';
   const showModerationHistory = isAdminView;
   const apiKeyStatusLabels: Record<ProjectApiKey['status'], string> = {
@@ -110,19 +113,19 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   }, [project.status]);
 
   const canAccessModeration =
-    can('PROJECTS_MODERATION_VIEW') || can('PROJECTS_REJECTED_VIEW') || can('PROJECTS_ACTIVE_VIEW');
+      can('PROJECTS_MODERATION_VIEW') || can('PROJECTS_REJECTED_VIEW') || can('PROJECTS_ACTIVE_VIEW');
 
   const managementAction =
-    !isAdminView && canAccessModeration ? (
-      <Button
-        href={route('projects_admin.show', [adminStatusSlug, project.ulid], false)}
-        variant="contained"
-        color="inherit"
-        startIcon={<Iconify icon="solar:settings-bold" width={20} />}
-      >
-        {__('pages/projects.actions.manage')}
-      </Button>
-    ) : null;
+      !isAdminView && canAccessModeration ? (
+          <Button
+              href={route('projects_admin.show', [adminStatusSlug, project.ulid], false)}
+              variant="contained"
+              color="inherit"
+              startIcon={<Iconify icon="solar:settings-bold" width={20} />}
+          >
+            {__('pages/projects.actions.manage')}
+          </Button>
+      ) : null;
 
   const tabs: ProjectTab[] = useMemo(() => {
     const items: ProjectTab[] = [
@@ -159,19 +162,19 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       side_commission: project.side_commission ?? '',
       side_commission_cc: project.side_commission_cc ?? '',
       auto_confirm_partial_by_amount:
-        project.auto_confirm_partial_by_amount != null
-          ? String(project.auto_confirm_partial_by_amount)
-          : '',
+          project.auto_confirm_partial_by_amount != null
+              ? String(project.auto_confirm_partial_by_amount)
+              : '',
       auto_confirm_partial_by_percent:
-        project.auto_confirm_partial_by_percent != null
-          ? String(project.auto_confirm_partial_by_percent)
-          : '',
+          project.auto_confirm_partial_by_percent != null
+              ? String(project.auto_confirm_partial_by_percent)
+              : '',
       service_fee:
-        isAdminView && project.service_fee == null
-          ? String(1.5)
-          : project.service_fee != null
-            ? String(project.service_fee)
-            : '',
+          isAdminView && project.service_fee == null
+              ? String(1.5)
+              : project.service_fee != null
+                  ? String(project.service_fee)
+                  : '',
     },
   });
 
@@ -208,7 +211,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     const currentValues = getValues();
 
     const shouldUpdate = (currentValue?: string, previousValue?: string, nextValue?: string) =>
-      !currentValue || (!!previousValue && currentValue === previousValue) || currentValue === nextValue;
+        !currentValue || (!!previousValue && currentValue === previousValue) || currentValue === nextValue;
 
     if (shouldUpdate(currentValues.success_url, previousCallbacks?.success, callbacks.success)) {
       setValue('success_url', callbacks.success);
@@ -226,16 +229,17 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   }, [getValues, platformValue, projectUrl, setValue]);
 
   const breadcrumbLinks: BreadcrumbLink[] =
-    breadcrumbs ?? [
-      { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
-      { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
-      { name: project.name },
-    ];
+      breadcrumbs ?? [
+        { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+        { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
+        { name: project.name },
+      ];
 
+  // === copyValue ДЛЯ ОБЫЧНЫХ КНОПОК КОПИРОВАНИЯ (API-KEY, SHOP ID, LINK) ===
   const copyValue = async (
-    value: string,
-    onCopied: (state: boolean) => void,
-    successMessage: string
+      value: string,
+      onCopied: (state: boolean) => void,
+      successMessage: string
   ) => {
     const text = value ?? '';
     onCopied(false);
@@ -249,7 +253,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
         return;
       }
     } catch (error) {
-      // fallback below
+      console.error('[copyValue] navigator.clipboard error', error);
     }
 
     const textarea = document.createElement('textarea');
@@ -271,6 +275,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       toast.success(successMessage);
       setTimeout(() => onCopied(false), 1500);
     } catch (error) {
+      console.error('[copyValue] execCommand fallback error', error);
       toast.error(__('pages/projects.notifications.copy_failed'));
     } finally {
       document.body.removeChild(textarea);
@@ -278,23 +283,61 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   };
 
   const handleCopyPaymentLink = async () =>
-    copyValue(paymentPageLink, setIsPaymentLinkCopied, __('pages/projects.notifications.payment_link_copied'));
+      copyValue(paymentPageLink, setIsPaymentLinkCopied, __('pages/projects.notifications.payment_link_copied'));
 
   const handleCopyShopId = async () =>
-    copyValue(project.ulid, setIsShopIdCopied, __('pages/projects.notifications.shop_id_copied'));
+      copyValue(project.ulid, setIsShopIdCopied, __('pages/projects.notifications.shop_id_copied'));
 
   const handleCopyApiKey = async () => {
     if (!activeApiKey) return;
     copyValue(activeApiKey.plain_text_token || '', setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
   };
 
+  // 🔴 НОВЫЙ handleCopySecret — работаем с реальным инпутом
   const handleCopySecret = async () => {
+    console.log('[handleCopySecret] clicked, generatedSecret =', generatedSecret);
+
     if (!generatedSecret) {
       toast.error(__('pages/projects.notifications.copy_failed'));
       return;
     }
 
-    copyValue(generatedSecret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+    // 1) Пытаемся через современный API
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(generatedSecret);
+        setIsSecretCopied(true);
+        toast.success(__('pages/projects.notifications.api_secret_copied'));
+        setTimeout(() => setIsSecretCopied(false), 1500);
+        return;
+      } catch (error) {
+        console.error('[handleCopySecret] navigator.clipboard error, fallback to execCommand', error);
+      }
+    }
+
+    // 2) Фоллбек — выделяем текст в самом поле и копируем
+    if (secretInputRef.current) {
+      secretInputRef.current.focus();
+      secretInputRef.current.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        console.log('[handleCopySecret] execCommand result from input =', successful);
+
+        if (!successful) {
+          throw new Error('Copy command was rejected');
+        }
+
+        setIsSecretCopied(true);
+        toast.success(__('pages/projects.notifications.api_secret_copied'));
+        setTimeout(() => setIsSecretCopied(false), 1500);
+        return;
+      } catch (error) {
+        console.error('[handleCopySecret] execCommand error from input', error);
+      }
+    }
+
+    toast.error(__('pages/projects.notifications.copy_failed'));
   };
 
   const handleGenerateSecret = async () => {
@@ -305,7 +348,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
 
     try {
       const { data } = await axiosInstance.post<{ api_keys: ProjectApiKey[]; secret: string; api_key?: string }>(
-        route('projects.api_keys.secret', project.ulid)
+          route('projects.api_keys.secret', project.ulid)
       );
 
       if (data.api_keys) {
@@ -372,26 +415,26 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     const formServiceFee = data.service_fee !== '' ? Number(data.service_fee) : null;
 
     const hasNonTokenChanges =
-      logoChanged ||
-      data.name !== project.name ||
-      data.activity_type !== (project.activity_type || '') ||
-      data.description !== (project.description || '') ||
-      data.platform !== (project.platform || '') ||
-      data.project_url !== (project.project_url || '') ||
-      data.success_url !== (project.success_url || '') ||
-      data.fail_url !== (project.fail_url || '') ||
-      data.notify_url !== (project.notify_url || '') ||
-      data.side_commission !== (project.side_commission || '') ||
-      data.side_commission_cc !== (project.side_commission_cc || '') ||
-      data.auto_confirm_partial_by_amount !==
+        logoChanged ||
+        data.name !== project.name ||
+        data.activity_type !== (project.activity_type || '') ||
+        data.description !== (project.description || '') ||
+        data.platform !== (project.platform || '') ||
+        data.project_url !== (project.project_url || '') ||
+        data.success_url !== (project.success_url || '') ||
+        data.fail_url !== (project.fail_url || '') ||
+        data.notify_url !== (project.notify_url || '') ||
+        data.side_commission !== (project.side_commission || '') ||
+        data.side_commission_cc !== (project.side_commission_cc || '') ||
+        data.auto_confirm_partial_by_amount !==
         (project.auto_confirm_partial_by_amount != null
-          ? String(project.auto_confirm_partial_by_amount)
-          : '') ||
-      data.auto_confirm_partial_by_percent !==
+            ? String(project.auto_confirm_partial_by_amount)
+            : '') ||
+        data.auto_confirm_partial_by_percent !==
         (project.auto_confirm_partial_by_percent != null
-          ? String(project.auto_confirm_partial_by_percent)
-          : '') ||
-      (isAdminView && formServiceFee !== (project.service_fee != null ? Number(project.service_fee) : null));
+            ? String(project.auto_confirm_partial_by_percent)
+            : '') ||
+        (isAdminView && formServiceFee !== (project.service_fee != null ? Number(project.service_fee) : null));
 
     const shouldSendToModeration = !isAdminView && project.status === 'approved' && hasNonTokenChanges;
 
@@ -399,11 +442,11 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       ...data,
       token_network_ids: selectedTokenNetworkIds,
       auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
-        ? Number(data.auto_confirm_partial_by_amount)
-        : null,
+          ? Number(data.auto_confirm_partial_by_amount)
+          : null,
       auto_confirm_partial_by_percent: data.auto_confirm_partial_by_percent
-        ? Number(data.auto_confirm_partial_by_percent)
-        : null,
+          ? Number(data.auto_confirm_partial_by_percent)
+          : null,
       service_fee: formServiceFee,
       context: isAdminView ? 'admin' : 'user',
     };
@@ -439,223 +482,225 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     const serviceFeeValue = methods.getValues('service_fee');
 
     router.post(
-      route('projects.moderate', project.ulid),
-      {
-        action,
-        comment: moderationComment || null,
-        service_fee: serviceFeeValue === '' ? null : Number(serviceFeeValue),
-      },
-      {
-        onSuccess: () => {
-          setModerationComment('');
-          toast.success(__('pages/projects.notifications.status_changed'));
+        route('projects.moderate', project.ulid),
+        {
+          action,
+          comment: moderationComment || null,
+          service_fee: serviceFeeValue === '' ? null : Number(serviceFeeValue),
         },
-        onError: () => {
-          toast.error(__('pages/projects.notifications.status_change_failed'));
-        },
-      }
+        {
+          onSuccess: () => {
+            setModerationComment('');
+            toast.success(__('pages/projects.notifications.status_changed'));
+          },
+          onError: () => {
+            toast.error(__('pages/projects.notifications.status_change_failed'));
+          },
+        }
     );
   };
 
   const canModerate =
-    isAdminView &&
-    (can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT'));
+      isAdminView &&
+      (can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT'));
 
   const serviceFeeError = methods.formState.errors.service_fee?.message;
 
   const serviceFeeControl =
-    canModerate && isAdminView ? (
-      <ServiceFeeField __={__} control={methods.control} error={serviceFeeError} />
-    ) : null;
+      canModerate && isAdminView ? (
+          <ServiceFeeField __={__} control={methods.control} error={serviceFeeError} />
+      ) : null;
 
   return (
-    <>
-      <title>{metadata.title}</title>
-      <DashboardLayout>
-        <DashboardContent maxWidth={false}>
-          <CustomBreadcrumbs
-            heading={project.name}
-            links={breadcrumbLinks}
-            action={managementAction}
-            sx={{ mb: { xs: 3, md: 5 } }}
-          />
+      <>
+        <title>{metadata.title}</title>
+        <DashboardLayout>
+          <DashboardContent maxWidth={false}>
+            <CustomBreadcrumbs
+                heading={project.name}
+                links={breadcrumbLinks}
+                action={managementAction}
+                sx={{ mb: { xs: 3, md: 5 } }}
+            />
 
-          <ModerationActions
-            canModerate={canModerate}
-            status={project.status}
-            moderationComment={moderationComment}
-            onChangeComment={setModerationComment}
-            onModerate={handleModeration}
-            serviceFeeControl={serviceFeeControl}
-            labels={{
-              comment: __('pages/projects.form.moderation_comment'),
-              approve: __('pages/projects.actions.approve'),
-              reject: __('pages/projects.actions.reject'),
-              backToModeration: __('pages/projects.actions.back_to_moderation'),
-            }}
-          />
+            <ModerationActions
+                canModerate={canModerate}
+                status={project.status}
+                moderationComment={moderationComment}
+                onChangeComment={setModerationComment}
+                onModerate={handleModeration}
+                serviceFeeControl={serviceFeeControl}
+                labels={{
+                  comment: __('pages/projects.form.moderation_comment'),
+                  approve: __('pages/projects.actions.approve'),
+                  reject: __('pages/projects.actions.reject'),
+                  backToModeration: __('pages/projects.actions.back_to_moderation'),
+                }}
+            />
 
-          {!isAdminView && project.status === 'pending' && (
-            <ModerationActions.PendingAlert>{__('pages/projects.alerts.pending')}</ModerationActions.PendingAlert>
-          )}
+            {!isAdminView && project.status === 'pending' && (
+                <ModerationActions.PendingAlert>{__('pages/projects.alerts.pending')}</ModerationActions.PendingAlert>
+            )}
 
-          {!isAdminView && project.status === 'rejected' && rejectionLog?.comment && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {__('pages/projects.alerts.rejected', { reason: rejectionLog.comment })}
-            </Alert>
-          )}
-
-          <Card sx={{ mb: 2 }}>
-            <ProjectTabs value={currentTab} tabs={tabs} onChange={handleTabChange} />
-          </Card>
-
-          <Card>
-            <Divider />
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
-              <Form methods={methods} onSubmit={onSubmit}>
-                <Stack spacing={3}>
-                  {currentTab === 'details' && (
-                    <DetailsStep
-                      title={__('pages/projects.steps.details')}
-                      namePlaceholder={__('pages/projects.form.name')}
-                      activityPlaceholder={__('pages/projects.form.activity_type')}
-                      paymentLink={paymentPageLink}
-                      onCopyPaymentLink={handleCopyPaymentLink}
-                      paymentLinkCopied={isPaymentLinkCopied}
-                    />
-                  )}
-
-                  {currentTab === 'links' && (
-                    <LinksStep
-                      title={__('pages/projects.steps.links')}
-                      platformLabels={{
-                        website: __('pages/projects.platforms.website'),
-                        telegram_bot: __('pages/projects.platforms.telegram_bot'),
-                        vk_bot: __('pages/projects.platforms.vk_bot'),
-                        other: __('pages/projects.platforms.other'),
-                      }}
-                      projectUrlLabel={projectUrlLabel}
-                      projectUrlPlaceholder={projectUrlPlaceholder}
-                      logoTitle={__('pages/projects.helpers.logo_title')}
-                      logoDescription={__('pages/projects.helpers.logo_description')}
-                      showCallbacks={false}
-                    />
-                  )}
-
-                  {currentTab === 'currencies' && (
-                    <CurrenciesStep
-                      title={__('pages/projects.steps.currencies')}
-                      tokenNetworks={tokenNetworks}
-                      control={methods.control}
-                      acceptLabel={__('pages/projects.form.accept_terms')}
-                    />
-                  )}
-
-                  {currentTab === 'integration' && (
-                    <IntegrationSection
-                      __={__}
-                      integrationAvailable={integrationAvailable}
-                      activeApiKey={activeApiKey}
-                      apiKeyStatusLabels={apiKeyStatusLabels}
-                      apiKeyStatusColors={apiKeyStatusColors}
-                      projectUlid={project.ulid}
-                      isApiKeyCopied={isApiKeyCopied}
-                      isShopIdCopied={isShopIdCopied}
-                      isGeneratingSecret={isGeneratingSecret}
-                      onCopyApiKey={handleCopyApiKey}
-                      onCopyShopId={handleCopyShopId}
-                      onGenerateSecret={handleGenerateSecret}
-                    />
-                  )}
-
-                  {currentTab === 'fees' && (
-                    <FeesSection
-                      __={__}
-                      integrationAvailable={integrationAvailable}
-                      serviceFee={project.service_fee}
-                    />
-                  )}
-
-                  {currentTab === 'history' && showModerationHistory && (
-                    <HistorySection
-                      __={__}
-                      moderationLogs={project.moderation_logs ?? []}
-                      statusColors={moderationStatusColors}
-                    />
-                  )}
-
-                  {currentTab !== 'history' && (
-                    <Stack direction="row" spacing={2} justifyContent="flex-end">
-                      <Button type="submit" variant="contained" disabled={isSubmitting}>
-                        {__('pages/projects.actions.save')}
-                      </Button>
-                    </Stack>
-                  )}
-                </Stack>
-              </Form>
-            </Box>
-          </Card>
-
-          {currentTab === 'history' && showModerationHistory && revokedKeys.length > 0 && (
-            <Box sx={{ mt: 3 }}>
-              <RevokedKeysAccordion __={__} revokedKeys={revokedKeys} />
-            </Box>
-          )}
-
-          <Dialog open={isSecretModalOpen} onClose={handleCloseSecretModal} maxWidth="sm" fullWidth>
-            <DialogTitle>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Iconify icon="solar:shield-keyhole-bold-duotone" width={24} />
-                <Typography variant="h6">{__('pages/projects.integration.secret_modal.title')}</Typography>
-              </Stack>
-            </DialogTitle>
-
-            <DialogContent>
-              <Stack spacing={2}>
-                <Typography variant="body2" color="text.secondary">
-                  {__('pages/projects.integration.secret_modal.description')}
-                </Typography>
-
-                <TextField
-                  label={__('pages/projects.integration.api_secret')}
-                  value={generatedSecret}
-                  margin="dense"
-                  size="small"
-                  variant="filled"
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          color={isSecretCopied ? 'success' : 'default'}
-                          onClick={handleCopySecret}
-                        >
-                          <Iconify icon="solar:copy-bold" width={18} />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Alert severity="warning" icon={<Iconify icon="solar:danger-triangle-bold" width={20} />}>
-                  <Stack spacing={0.5}>
-                    <Typography variant="subtitle2">
-                      {__('pages/projects.integration.secret_modal.attention')}
-                    </Typography>
-                    <Typography variant="body2">
-                      {__('pages/projects.integration.secret_modal.note')}
-                    </Typography>
-                  </Stack>
+            {!isAdminView && project.status === 'rejected' && rejectionLog?.comment && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {__('pages/projects.alerts.rejected', { reason: rejectionLog.comment })}
                 </Alert>
-              </Stack>
-            </DialogContent>
+            )}
 
-            <DialogActions>
-              <Button onClick={handleCloseSecretModal}>{__('pages/projects.integration.secret_modal.close')}</Button>
-            </DialogActions>
-          </Dialog>
-        </DashboardContent>
-      </DashboardLayout>
-    </>
+            <Card sx={{ mb: 2 }}>
+              <ProjectTabs value={currentTab} tabs={tabs} onChange={handleTabChange} />
+            </Card>
+
+            <Card>
+              <Divider />
+              <Box sx={{ p: { xs: 2, md: 3 } }}>
+                <Form methods={methods} onSubmit={onSubmit}>
+                  <Stack spacing={3}>
+                    {currentTab === 'details' && (
+                        <DetailsStep
+                            title={__('pages/projects.steps.details')}
+                            namePlaceholder={__('pages/projects.form.name')}
+                            activityPlaceholder={__('pages/projects.form.activity_type')}
+                            paymentLink={paymentPageLink}
+                            onCopyPaymentLink={handleCopyPaymentLink}
+                            paymentLinkCopied={isPaymentLinkCopied}
+                        />
+                    )}
+
+                    {currentTab === 'links' && (
+                        <LinksStep
+                            title={__('pages/projects.steps.links')}
+                            platformLabels={{
+                              website: __('pages/projects.platforms.website'),
+                              telegram_bot: __('pages/projects.platforms.telegram_bot'),
+                              vk_bot: __('pages/projects.platforms.vk_bot'),
+                              other: __('pages/projects.platforms.other'),
+                            }}
+                            projectUrlLabel={projectUrlLabel}
+                            projectUrlPlaceholder={projectUrlPlaceholder}
+                            logoTitle={__('pages/projects.helpers.logo_title')}
+                            logoDescription={__('pages/projects.helpers.logo_description')}
+                            showCallbacks={false}
+                        />
+                    )}
+
+                    {currentTab === 'currencies' && (
+                        <CurrenciesStep
+                            title={__('pages/projects.steps.currencies')}
+                            tokenNetworks={tokenNetworks}
+                            control={methods.control}
+                            acceptLabel={__('pages/projects.form.accept_terms')}
+                        />
+                    )}
+
+                    {currentTab === 'integration' && (
+                        <IntegrationSection
+                            __={__}
+                            integrationAvailable={integrationAvailable}
+                            activeApiKey={activeApiKey}
+                            apiKeyStatusLabels={apiKeyStatusLabels}
+                            apiKeyStatusColors={apiKeyStatusColors}
+                            projectUlid={project.ulid}
+                            isApiKeyCopied={isApiKeyCopied}
+                            isShopIdCopied={isShopIdCopied}
+                            isGeneratingSecret={isGeneratingSecret}
+                            onCopyApiKey={handleCopyApiKey}
+                            onCopyShopId={handleCopyShopId}
+                            onGenerateSecret={handleGenerateSecret}
+                        />
+                    )}
+
+                    {currentTab === 'fees' && (
+                        <FeesSection
+                            __={__}
+                            integrationAvailable={integrationAvailable}
+                            serviceFee={project.service_fee}
+                        />
+                    )}
+
+                    {currentTab === 'history' && showModerationHistory && (
+                        <HistorySection
+                            __={__}
+                            moderationLogs={project.moderation_logs ?? []}
+                            statusColors={moderationStatusColors}
+                        />
+                    )}
+
+                    {currentTab !== 'history' && (
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                          <Button type="submit" variant="contained" disabled={isSubmitting}>
+                            {__('pages/projects.actions.save')}
+                          </Button>
+                        </Stack>
+                    )}
+                  </Stack>
+                </Form>
+              </Box>
+            </Card>
+
+            {currentTab === 'history' && showModerationHistory && revokedKeys.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <RevokedKeysAccordion __={__} revokedKeys={revokedKeys} />
+                </Box>
+            )}
+
+            <Dialog open={isSecretModalOpen} onClose={handleCloseSecretModal} maxWidth="sm" fullWidth>
+              <DialogTitle>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Iconify icon="solar:shield-keyhole-bold-duotone" width={24} />
+                  <Typography variant="h6">{__('pages/projects.integration.secret_modal.title')}</Typography>
+                </Stack>
+              </DialogTitle>
+
+              <DialogContent>
+                <Stack spacing={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {__('pages/projects.integration.secret_modal.description')}
+                  </Typography>
+
+                  <TextField
+                      label={__('pages/projects.integration.api_secret')}
+                      value={generatedSecret}
+                      margin="dense"
+                      size="small"
+                      variant="filled"
+                      // 🔴 ВАЖНО: привязали ref к инпуту
+                      inputRef={secretInputRef}
+                      InputProps={{
+                        readOnly: true,
+                        endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                  color={isSecretCopied ? 'success' : 'default'}
+                                  onClick={handleCopySecret}
+                              >
+                                <Iconify icon="solar:copy-bold" width={18} />
+                              </IconButton>
+                            </InputAdornment>
+                        ),
+                      }}
+                  />
+
+                  <Alert severity="warning" icon={<Iconify icon="solar:danger-triangle-bold" width={20} />}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="subtitle2">
+                        {__('pages/projects.integration.secret_modal.attention')}
+                      </Typography>
+                      <Typography variant="body2">
+                        {__('pages/projects.integration.secret_modal.note')}
+                      </Typography>
+                    </Stack>
+                  </Alert>
+                </Stack>
+              </DialogContent>
+
+              <DialogActions>
+                <Button onClick={handleCloseSecretModal}>{__('pages/projects.integration.secret_modal.close')}</Button>
+              </DialogActions>
+            </Dialog>
+          </DashboardContent>
+        </DashboardLayout>
+      </>
   );
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Project\ProjectAdminController;
 use App\Http\Controllers\Project\ProjectUserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Invoice\InvoiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -97,6 +98,20 @@ Route::middleware('auth')->group(function () {
   Route::post('/projects/{project:ulid}/api-keys/secret', [ProjectUserController::class, 'generateSecret'])
     ->middleware(['permission:PROJECTS_EDIT|PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects.api_keys.secret');
+
+  Route::get('/payments', [InvoiceController::class, 'index'])
+    ->middleware(['permission:PAYMENTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/payments'])
+    ->name('payments.index');
+  Route::get('/payments/export', [InvoiceController::class, 'export'])
+    ->middleware('permission:PAYMENTS_VIEW')
+    ->name('payments.export');
+
+  Route::get('/admin/payments', [InvoiceController::class, 'adminIndex'])
+    ->middleware(['permission:PAYMENTS_ADMIN_VIEW', 'sync.lang:auth,navbar,navigation,pages/payments'])
+    ->name('payments.admin');
+  Route::get('/admin/payments/export', [InvoiceController::class, 'adminExport'])
+    ->middleware('permission:PAYMENTS_ADMIN_VIEW')
+    ->name('payments.admin.export');
 
   Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])

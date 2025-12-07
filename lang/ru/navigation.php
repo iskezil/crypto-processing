@@ -5,6 +5,7 @@ return [
         'subheader' => 'Обзор',
         'one' => 'Один',
         'projects' => 'Мои проекты',
+        'payments' => 'Платежи',
         'create_project' => 'Создать проект'
     ],
     'management' => [
@@ -14,6 +15,7 @@ return [
         'roles' => 'Роли',
         'permissions' => 'Разрешения',
         'projects' => 'Проекты',
+        'payments' => 'Платежи',
         'projects_moderation' => 'Модерация проектов',
         'projects_rejected' => 'Отклоненные проекты',
         'projects_active' => 'Активные проекты',

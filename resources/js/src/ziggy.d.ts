@@ -123,6 +123,10 @@ declare module 'ziggy-js' {
         "binding": "ulid";
       }
     ];
+    "payments.index": [];
+    "payments.export": [];
+    "payments.admin": [];
+    "payments.admin.export": [];
     "register": [];
     "login": [];
     "password.request": [];
