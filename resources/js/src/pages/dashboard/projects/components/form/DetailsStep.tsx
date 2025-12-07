@@ -57,6 +57,7 @@ export function DetailsStep({
         description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
       >
           <TextField
+              autoFocus
               size={'small'}
               margin="dense"
               fullWidth
