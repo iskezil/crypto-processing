@@ -106,7 +106,7 @@ export function LinksStep({
             </Stack>
           }
           slotProps={{
-            wrapper: { sx: { maxWidth: 520, alignSelf: 'stretch' } },
+            wrapper: { sx: { alignSelf: 'stretch' } },
           }}
         />
       </FormRow>
