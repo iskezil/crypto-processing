@@ -49,10 +49,10 @@ export function CustomTabs({ children, slotProps, sx, ...other }: CustomTabsProp
       sx={[
         customTabsStyles.root,
         {
-          [`& .${tabClasses.root}`]: {
-            ...customTabsStyles.tabItem,
-            ...slotProps?.tab?.sx,
-          },
+          [`& .${tabClasses.root}`]: [
+            customTabsStyles.tabItem,
+            ...([slotProps?.tab?.sx].flat().filter(Boolean) as SxProps<Theme>[]),
+          ],
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

@@ -12,6 +12,8 @@ import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
+import { tabClasses } from '@mui/material/Tab';
+import type { Theme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 
@@ -36,9 +38,7 @@ import { CurrenciesStep } from '../create/components/CurrenciesStep';
 import { DetailsStep } from '../create/components/DetailsStep';
 import { LinksStep } from '../create/components/LinksStep';
 import { projectSchema, type ProjectFormValues } from '../create/schema';
-import {varAlpha} from "minimal-shared/utils";
-import {palette} from "@/theme";
-import {alpha} from "@mui/material";
+import { varAlpha } from 'minimal-shared/utils';
 
 // ----------------------------------------------------------------------
 
@@ -141,6 +141,35 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     approved: 'success',
     rejected: 'error',
   };
+
+  const tabSx = (theme: Theme) => ({
+    borderRadius: 1,
+    minHeight: 44,
+    px: 1.5,
+    fontWeight: 600,
+    fontSize: 14,
+    textTransform: 'none',
+
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    color: theme.vars.palette.text.secondary,
+    backgroundColor: 'transparent',
+    transition: theme.transitions.create(['background-color', 'color'], {
+      duration: theme.transitions.duration.shorter,
+    }),
+    '&:hover': {
+      backgroundColor: theme.vars.palette.action.hover,
+    },
+    [`&.${tabClasses.selected}`]: {
+      color: theme.vars.palette.primary.main,
+      backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
+      '&:hover': {
+        backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.16),
+      },
+    },
+  });
 
   const tabs = useMemo(() => {
     const items = [
@@ -430,30 +459,18 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                 variant="scrollable"
                 allowScrollButtonsMobile
                 slotProps={{
-                  tab: {
-                    sx: (theme) => ({
-                      // геометрия как у пунктов меню
-                      borderRadius: 1.75, // примерно как у левого меню
-                      minHeight: 44,
-                      px: 2.5,
-                      fontWeight: 600,
-                      fontSize: 14,
-                      textTransform: 'none',
-
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-
-                      color: theme.vars.palette.text.secondary,
-                      transition: theme.transitions.create(['background-color', 'color'], {
-                        duration: theme.transitions.duration.shorter,
-                      }),
-                    }),
-                  },
+                  indicator: { sx: { display: 'none' } },
+                  indicatorContent: { sx: { display: 'none' } },
                 }}
             >
               {tabs.map((tab) => (
-                  <Tab key={tab.value} value={tab.value} label={tab.label} disabled={tab.disabled} />
+                  <Tab
+                    key={tab.value}
+                    value={tab.value}
+                    label={tab.label}
+                    disabled={tab.disabled}
+                    sx={tabSx}
+                  />
               ))}
             </CustomTabs>
 
