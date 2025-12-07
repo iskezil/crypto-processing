@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\Concerns\HasUlid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
@@ -18,7 +20,10 @@ class Invoice extends Model
       'amount',
       'amount_usd',
       'paid_amount',
+      'credited_amount',
+      'credited_amount_usd',
       'service_fee',
+      'transfer_fee',
       'service_fee_usd',
       'fiat_currency',
       'token_network_id',
@@ -26,6 +31,7 @@ class Invoice extends Model
       'side_commission',
       'side_commission_cc',
       'is_email_required',
+      'tx_ids',
       'test_mode',
       'expiry_date',
       'external_order_id',
@@ -37,7 +43,10 @@ class Invoice extends Model
       'amount'           => 'decimal:8',
       'amount_usd'       => 'decimal:8',
       'paid_amount'      => 'decimal:8',
+      'credited_amount'      => 'decimal:8',
+      'credited_amount_usd'      => 'decimal:8',
       'service_fee'      => 'decimal:6',
+      'transfer_fee'      => 'decimal:6',
       'service_fee_usd'  => 'decimal:6',
       'is_email_required'=> 'boolean',
       'test_mode'        => 'boolean',
@@ -47,22 +56,22 @@ class Invoice extends Model
       'updated_at'       => 'datetime',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
       return $this->belongsTo(Project::class);
     }
 
-    public function tokenNetwork()
+    public function tokenNetwork(): BelongsTo
     {
       return $this->belongsTo(TokenNetwork::class);
     }
 
-    public function depositEvents()
+    public function depositEvents(): HasMany
     {
       return $this->hasMany(DepositEvent::class);
     }
 
-    public function webhookLogs()
+    public function webhookLogs(): HasMany
     {
       return $this->hasMany(InvoiceWebhookLog::class);
     }

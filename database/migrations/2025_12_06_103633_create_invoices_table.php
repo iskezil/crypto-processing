@@ -18,7 +18,10 @@ return new class extends Migration {
       $table->decimal('amount', 18, 8)->comment('Сумма счета в валюте создания (fiat_currency)');
       $table->decimal('amount_usd', 18, 8)->comment('Сумма счета, пересчитанная в USD на момент создания');
       $table->decimal('paid_amount', 18, 8)->default(0)->comment('Фактически оплаченная сумма (агрегация из deposit_events)');
+      $table->decimal('credited_amount', 18, 8)->default(0)->comment('Зачислено по счету клиенту');
+      $table->decimal('credited_amount_usd', 18, 8)->default(0)->comment('Зачислено по счету клиенту в USD');
       $table->decimal('service_fee', 18, 6)->nullable()->comment('Комиссия сервиса по этому счету');
+      $table->decimal('transfer_fee', 18, 6)->nullable()->comment('Комиссия за трансфер по этому счету');
       $table->decimal('service_fee_usd', 18, 6)->nullable()->comment('Комиссия сервиса в USD по этому счету');
       $table->string('fiat_currency', 10)->default('USD')->comment('Код фиатной валюты создания счета: USD, EUR, RUB и т.д.');
       $table->unsignedBigInteger('token_network_id')->nullable()->comment('Конкретная пара токен+сеть, выбранная для оплаты (token_networks.id)');
@@ -26,6 +29,7 @@ return new class extends Migration {
       $table->string('side_commission', 10)->default('client')->comment('Кто оплачивает трансферную комиссию: client или merchant');
       $table->string('side_commission_cc', 10)->default('client')->comment('Кто оплачивает сервисную комиссию: client или merchant');
       $table->boolean('is_email_required')->default(false)->comment('Обязателен ли email плательщика для этого счета');
+      $table->string('tx_ids')->nullable()->comment('TX IDS операции');
       $table->boolean('test_mode')->default(false)->comment('Тестовый ли это счет');
       $table->timestamp('expiry_date')->comment('Дата и время истечения срока действия счета');
       $table->string('external_order_id', 255)->nullable()->comment('Идентификатор заказа во внешней системе мерчанта');
