@@ -82,7 +82,7 @@ export default function ModerationList({ projects, status }: { projects: Project
                     <TableRow key={project.id} hover>
                       <TableCell>{project.id}</TableCell>
                       <TableCell>
-                        <Button href={route('projects.show', project.ulid, false)} color="inherit">
+                        <Button href={route('projects_admin.show', project.ulid, false)} color="inherit">
                           {project.name}
                         </Button>
                       </TableCell>
@@ -96,7 +96,7 @@ export default function ModerationList({ projects, status }: { projects: Project
                       <TableCell>{project.created_at}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <IconButton href={route('projects.show', project.ulid, false)} color="primary" size="small">
+                          <IconButton href={route('projects_admin.show', project.ulid, false)} color="primary" size="small">
                             <Iconify icon="solar:eye-bold" width={18} />
                           </IconButton>
                         </Stack>

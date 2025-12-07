@@ -1,7 +1,11 @@
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 
 import { Field } from 'src/components/hook-form';
+import { Iconify } from 'src/components/iconify';
 
 import { FormRow } from './FormRow';
 
@@ -9,12 +13,44 @@ type DetailsStepProps = {
   title: string;
   namePlaceholder: string;
   activityPlaceholder: string;
+  paymentLink?: string;
+  onCopyPaymentLink?: () => void;
+  paymentLinkCopied?: boolean;
 };
 
-export function DetailsStep({ title, namePlaceholder, activityPlaceholder }: DetailsStepProps) {
+export function DetailsStep({
+  title,
+  namePlaceholder,
+  activityPlaceholder,
+  paymentLink,
+  onCopyPaymentLink,
+  paymentLinkCopied,
+}: DetailsStepProps) {
   return (
     <Stack spacing={3}>
       <Typography variant="h6">{title}</Typography>
+
+      {paymentLink && (
+        <FormRow
+          title="Cсылка на постоянную страницу оплаты:"
+          description="Используйте ссылку для приема платежей без интеграции."
+        >
+          <TextField
+            fullWidth
+            value={paymentLink}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton color={paymentLinkCopied ? 'success' : 'default'} onClick={() => onCopyPaymentLink?.()}>
+                    <Iconify icon="solar:copy-bold" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </FormRow>
+      )}
 
       <FormRow
         title="Название проекта"

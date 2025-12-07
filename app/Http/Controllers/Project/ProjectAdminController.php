@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Project;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectModerationLog;
+use App\Models\TokenNetwork;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -59,7 +60,7 @@ class ProjectAdminController extends Controller
         'comment' => ['nullable', 'string', 'max:1000'],
       ]);
 
-      DB::transaction(function () use ($project, $validated) {
+      DB::transaction(function () use ($project, $validated, $request) {
         $action = Arr::get($validated, 'action');
         $comment = Arr::get($validated, 'comment');
         $status = match ($action) {
@@ -80,6 +81,32 @@ class ProjectAdminController extends Controller
       });
 
       return redirect()->back();
+    }
+
+    public function show(Project $project): Response
+    {
+      $project->load([
+        'moderationLogs.moderator:id,name,email',
+        'tokenNetworks.token',
+        'tokenNetworks.network',
+      ]);
+
+      $tokenNetworks = TokenNetwork::query()
+        ->with(['token:id,name,code,icon_path', 'network:id,name,code,icon_path'])
+        ->where('active', true)
+        ->orderBy('order')
+        ->get([
+          'id',
+          'token_id',
+          'network_id',
+          'full_code',
+          'stable_coin',
+        ]);
+
+      return Inertia::render('dashboard/projects/moderation/show', [
+        'project' => $project,
+        'tokenNetworks' => $tokenNetworks,
+      ]);
     }
 
     private function getProjectsByStatus(string $status)

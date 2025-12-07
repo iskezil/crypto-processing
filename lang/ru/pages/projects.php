@@ -71,6 +71,7 @@ return [
         'sent_to_moderation' => 'Проект отправлен на модерацию',
         'status_changed' => 'Статус проекта обновлен',
         'status_change_failed' => 'Не удалось обновить статус проекта',
+        'payment_link_copied' => 'Ссылка скопирована',
     ],
     'platforms' => [
         'website' => 'Сайт',

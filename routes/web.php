@@ -102,6 +102,10 @@ Route::middleware('auth')->group(function () {
     ->middleware(['permission:PROJECTS_ACTIVE_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_active.index');
 
+  Route::get('/admin/projects/{project:ulid}', [ProjectAdminController::class, 'show'])
+    ->middleware(['permission:PROJECTS_MODERATION_VIEW|PROJECTS_REJECTED_VIEW|PROJECTS_ACTIVE_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects_admin.show');
+
   Route::post('/admin/projects/{project:ulid}/moderate', [ProjectAdminController::class, 'moderate'])
     ->middleware(['permission:PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT'])
     ->name('projects.moderate');

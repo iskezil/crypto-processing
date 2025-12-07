@@ -46,6 +46,8 @@ type TokenNetwork = {
   network?: { name?: string; code?: string; icon_path?: string; icon_url?: string; network?: string };
 };
 
+type BreadcrumbLink = { name: string; href?: string };
+
 type Project = {
   id: number;
   ulid: string;
@@ -72,11 +74,18 @@ const platformLabels: Record<ProjectFormValues['platform'], string> = {
   other: 'pages/projects.platforms.other',
 };
 
-export default function ProjectShow({ project, tokenNetworks }: { project: Project; tokenNetworks: TokenNetwork[] }) {
+export type ProjectShowProps = {
+  project: Project;
+  tokenNetworks: TokenNetwork[];
+  breadcrumbs?: BreadcrumbLink[];
+};
+
+export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: ProjectShowProps) {
   const { __ } = useLang();
   const { can } = useAuthz();
   const [currentTab, setCurrentTab] = useState('details');
   const [moderationComment, setModerationComment] = useState('');
+  const [isPaymentLinkCopied, setIsPaymentLinkCopied] = useState(false);
 
   const tabs = [
     { value: 'details', label: __('pages/projects.steps.details') },
@@ -116,6 +125,46 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
   const platform = watch('platform');
   const projectUrlLabel = __(platformLabels[platform]);
   const latestModeration = project.moderation_logs?.[project.moderation_logs.length - 1];
+  const paymentPageLink = route('pos.show', project.ulid, false);
+
+  const breadcrumbLinks: BreadcrumbLink[] =
+    breadcrumbs ?? [
+      { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+      { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
+      { name: project.name },
+    ];
+
+  const handleCopyPaymentLink = async () => {
+    setIsPaymentLinkCopied(false);
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(paymentPageLink);
+        setIsPaymentLinkCopied(true);
+        toast.success(__('pages/projects.notifications.payment_link_copied'));
+        setTimeout(() => setIsPaymentLinkCopied(false), 1500);
+        return;
+      } catch (error) {
+        // fallback method below
+      }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = paymentPageLink;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      document.execCommand('copy');
+      setIsPaymentLinkCopied(true);
+      toast.success(__('pages/projects.notifications.payment_link_copied'));
+      setTimeout(() => setIsPaymentLinkCopied(false), 1500);
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  };
 
   const onSubmit = handleSubmit((data) => {
     const logo = data.logo instanceof File ? data.logo.name : data.logo || '';
@@ -185,11 +234,7 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
         <DashboardContent maxWidth={false}>
           <CustomBreadcrumbs
             heading={project.name}
-            links={[
-              { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
-              { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
-              { name: project.name },
-            ]}
+            links={breadcrumbLinks}
             sx={{ mb: { xs: 3, md: 5 } }}
           />
 
@@ -202,23 +247,10 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
                   label={__(`pages/projects.status.${project.status}`)}
                 />
               </Stack>
-              <Button variant="outlined" href={route('pos.show', project.ulid)}>
+              <Button variant="outlined" href={paymentPageLink}>
                 {__('pages/projects.tabs.payment_page')}
               </Button>
             </Stack>
-
-            {project.status === 'pending' && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                {__('pages/projects.alerts.pending')}
-              </Alert>
-            )}
-
-            {project.status === 'rejected' && latestModeration?.comment && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {__('pages/projects.alerts.rejected', { reason: latestModeration.comment })}
-              </Alert>
-            )}
-
             {canModerate && (
               <Stack spacing={2} sx={{ mt: 3 }}>
                 <TextField
@@ -276,6 +308,18 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
             )}
           </Card>
 
+          {project.status === 'pending' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {__('pages/projects.alerts.pending')}
+            </Alert>
+          )}
+
+          {project.status === 'rejected' && latestModeration?.comment && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {__('pages/projects.alerts.rejected', { reason: latestModeration.comment })}
+            </Alert>
+          )}
+
           <Card sx={{ mb: 2 }}>
             <CustomTabs
               value={currentTab}
@@ -303,6 +347,9 @@ export default function ProjectShow({ project, tokenNetworks }: { project: Proje
                       title={__('pages/projects.steps.details')}
                       namePlaceholder={__('pages/projects.form.name')}
                       activityPlaceholder={__('pages/projects.form.activity_type')}
+                      paymentLink={paymentPageLink}
+                      onCopyPaymentLink={handleCopyPaymentLink}
+                      paymentLinkCopied={isPaymentLinkCopied}
                     />
                   )}
 

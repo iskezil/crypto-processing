@@ -71,6 +71,7 @@ return [
         'sent_to_moderation' => 'Project sent for moderation',
         'status_changed' => 'Project status updated',
         'status_change_failed' => 'Failed to update project status',
+        'payment_link_copied' => 'Payment link copied',
     ],
     'platforms' => [
         'website' => 'Website',
