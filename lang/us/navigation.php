@@ -4,7 +4,8 @@ return [
     'overview' => [
         'subheader' => 'Overview',
         'one' => 'One',
-        'projects' => 'My projects'
+        'projects' => 'My projects',
+        'create_project' => 'Create project'
     ],
     'management' => [
         'subheader' => 'Management',

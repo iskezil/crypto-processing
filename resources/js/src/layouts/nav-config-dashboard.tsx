@@ -99,7 +99,7 @@ export function useNavData(): NavSectionProps['data'] {
                 ),
               })),
               {
-                title: __('pages/projects.actions.create'),
+                title: __('navigation.overview.create_project'),
                 path: route('projects.create', undefined, false),
                 permission: 'PROJECTS_CREATE',
                 icon: ICONS.menuItem,

@@ -14,6 +14,7 @@ type ModerationActionsProps = {
   moderationComment: string;
   onChangeComment: (value: string) => void;
   onModerate: (action: 'approve' | 'reject' | 'to_pending') => void;
+  serviceFeeControl?: ReactNode;
   labels: {
     comment: string;
     approve: string;
@@ -28,6 +29,7 @@ export function ModerationActions({
   moderationComment,
   onChangeComment,
   onModerate,
+  serviceFeeControl,
   labels,
 }: ModerationActionsProps) {
   if (!canModerate) {
@@ -37,17 +39,21 @@ export function ModerationActions({
   return (
     <Card sx={styles.card}>
       <Stack spacing={2} sx={styles.content}>
-        <TextField
-          label={labels.comment}
-          multiline
-          minRows={2}
-          fullWidth
-          margin="dense"
-          size="small"
-          variant="filled"
-          value={moderationComment}
-          onChange={(event) => onChangeComment(event.target.value)}
-        />
+        <Stack spacing={1.5}>
+          <TextField
+            label={labels.comment}
+            multiline
+            minRows={2}
+            fullWidth
+            margin="dense"
+            size="small"
+            variant="filled"
+            value={moderationComment}
+            onChange={(event) => onChangeComment(event.target.value)}
+          />
+
+          {serviceFeeControl}
+        </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
           {status === 'pending' && (

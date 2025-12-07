@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,6 +60,11 @@ class ProjectAdminController extends Controller
       $validated = $request->validate([
         'action' => ['required', 'in:approve,reject,to_pending'],
         'comment' => ['nullable', 'string', 'max:1000'],
+        'service_fee' => [
+          Rule::requiredIf(fn () => $request->input('action') === 'approve'),
+          'numeric',
+          'between:0,10',
+        ],
       ]);
 
       $this->authorizeEditByStatus($project);
@@ -66,13 +72,19 @@ class ProjectAdminController extends Controller
       DB::transaction(function () use ($project, $validated, $request) {
         $action = Arr::get($validated, 'action');
         $comment = Arr::get($validated, 'comment');
+        $serviceFee = Arr::get($validated, 'service_fee');
         $status = match ($action) {
           'approve' => 'approved',
           'reject' => 'rejected',
           default => 'pending',
         };
 
-        $project->update(['status' => $status]);
+        $project->update([
+          'status' => $status,
+          'service_fee' => $serviceFee === null || $serviceFee === ''
+            ? $project->service_fee
+            : (float) $serviceFee,
+        ]);
 
         $project->apiKeys()
           ->where('status', '!=', 'revoked')

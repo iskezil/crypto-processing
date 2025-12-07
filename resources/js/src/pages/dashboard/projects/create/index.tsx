@@ -65,6 +65,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
       side_commission_cc: 'client',
       auto_confirm_partial_by_amount: '',
       auto_confirm_partial_by_percent: '',
+      service_fee: '1.5',
     },
   });
 
@@ -140,12 +141,9 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
   );
 
   const onSubmit = handleSubmit((data) => {
-    const logo = data.logo instanceof File ? data.logo.name : data.logo || '';
-
     const payload = {
       _token: csrfToken,
       ...data,
-      logo,
       token_network_ids: data.token_network_ids.map((id) => Number(id)),
       auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
         ? Number(data.auto_confirm_partial_by_amount)
@@ -153,9 +151,11 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
       auto_confirm_partial_by_percent: data.auto_confirm_partial_by_percent
         ? Number(data.auto_confirm_partial_by_percent)
         : null,
+      service_fee: data.service_fee ? Number(data.service_fee) : null,
     };
 
     router.post(route('projects.store'), payload, {
+      forceFormData: true,
       onSuccess: () => {
         toast.success(__('pages/projects.notifications.sent_to_moderation'));
       },

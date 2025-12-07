@@ -4,7 +4,8 @@ return [
     'overview' => [
         'subheader' => 'Обзор',
         'one' => 'Один',
-        'projects' => 'Мои проекты'
+        'projects' => 'Мои проекты',
+        'create_project' => 'Создать проект'
     ],
     'management' => [
         'subheader' => 'Управление',

@@ -8,13 +8,16 @@ use App\Models\ProjectApiKey;
 use App\Models\ProjectModerationLog;
 use App\Models\ProjectTokenNetwork;
 use App\Models\TokenNetwork;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Laravel\Sanctum\PersonalAccessToken;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -71,6 +74,14 @@ class ProjectUserController extends Controller
     {
       $user = $request->user();
 
+      $logoRule = Rule::when(
+        $request->hasFile('logo'),
+        ['image', 'mimes:jpeg,png', 'max:2048', 'dimensions:ratio=3/1'],
+        ['string', 'max:255']
+      );
+
+      $serviceFeeRules = ['nullable', 'numeric', 'min:0', 'max:10'];
+
       $validated = $request->validate([
         'name' => ['required', 'string', 'max:255'],
         'activity_type' => ['required', 'string', 'max:255'],
@@ -80,14 +91,17 @@ class ProjectUserController extends Controller
         'success_url' => ['nullable', 'string', 'max:255'],
         'fail_url' => ['nullable', 'string', 'max:255'],
         'notify_url' => ['nullable', 'string', 'max:255'],
-        'logo' => ['nullable', 'string', 'max:255'],
+        'logo' => ['nullable', $logoRule],
         'side_commission' => ['required', 'in:client,merchant'],
         'side_commission_cc' => ['required', 'in:client,merchant'],
         'auto_confirm_partial_by_amount' => ['nullable', 'numeric'],
         'auto_confirm_partial_by_percent' => ['nullable', 'numeric'],
         'token_network_ids' => ['required', 'array', 'min:1'],
         'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
+        'service_fee' => $serviceFeeRules,
       ]);
+
+      $logoPath = $this->storeLogo($request);
 
       $project = Project::create([
         'user_id' => $user->id,
@@ -99,7 +113,7 @@ class ProjectUserController extends Controller
         'success_url' => Arr::get($validated, 'success_url'),
         'fail_url' => Arr::get($validated, 'fail_url'),
         'notify_url' => Arr::get($validated, 'notify_url'),
-        'logo' => Arr::get($validated, 'logo'),
+        'logo' => $logoPath,
         'side_commission' => Arr::get($validated, 'side_commission'),
         'side_commission_cc' => Arr::get($validated, 'side_commission_cc'),
         'auto_confirm_partial_by_amount' => filled($validated['auto_confirm_partial_by_amount'] ?? null)
@@ -108,6 +122,7 @@ class ProjectUserController extends Controller
         'auto_confirm_partial_by_percent' => filled($validated['auto_confirm_partial_by_percent'] ?? null)
           ? (float) $validated['auto_confirm_partial_by_percent']
           : null,
+        'service_fee' => $this->resolveServiceFee($request, null, $this->canModerate($user)),
         'status' => 'pending',
         'is_archived' => false,
       ]);
@@ -180,11 +195,24 @@ class ProjectUserController extends Controller
   public function update(Request $request, Project $project): RedirectResponse
     {
       $user = $request->user();
+      $isModerator = $user ? $this->canModerate($user) : false;
 
       abort_unless(
         $user && ($project->user_id === $user->id || $user->can('PROJECTS_MODERATION_VIEW')),
         403
       );
+
+      $logoRule = Rule::when(
+        $request->hasFile('logo'),
+        ['image', 'mimes:jpeg,png', 'max:2048', 'dimensions:ratio=3/1'],
+        ['string', 'max:255']
+      );
+
+      $serviceFeeRules = ['nullable', 'numeric', 'min:0', 'max:10'];
+
+      if ($isModerator) {
+        array_unshift($serviceFeeRules, 'required');
+      }
 
       $validated = $request->validate([
         'name' => ['required', 'string', 'max:255'],
@@ -195,19 +223,32 @@ class ProjectUserController extends Controller
         'success_url' => ['nullable', 'string', 'max:255'],
         'fail_url' => ['nullable', 'string', 'max:255'],
         'notify_url' => ['nullable', 'string', 'max:255'],
-        'logo' => ['nullable', 'string', 'max:255'],
+        'logo' => ['nullable', $logoRule],
         'side_commission' => ['required', 'in:client,merchant'],
         'side_commission_cc' => ['required', 'in:client,merchant'],
         'auto_confirm_partial_by_amount' => ['nullable', 'numeric'],
         'auto_confirm_partial_by_percent' => ['nullable', 'numeric'],
         'token_network_ids' => ['required', 'array', 'min:1'],
         'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
+        'service_fee' => $serviceFeeRules,
       ]);
 
-      DB::transaction(function () use ($project, $validated, $user) {
+      $logoPath = $this->storeLogo($request, $project->logo);
+
+      $shouldSendToModeration = false;
+
+      DB::transaction(function () use (
+        &$shouldSendToModeration,
+        $project,
+        $validated,
+        $user,
+        $logoPath,
+        $isModerator,
+        $request
+      ) {
         $originalStatus = $project->status;
 
-        $project->update([
+        $projectData = [
           'name' => $validated['name'],
           'activity_type' => $validated['activity_type'],
           'description' => Arr::get($validated, 'description'),
@@ -216,7 +257,7 @@ class ProjectUserController extends Controller
           'success_url' => Arr::get($validated, 'success_url'),
           'fail_url' => Arr::get($validated, 'fail_url'),
           'notify_url' => Arr::get($validated, 'notify_url'),
-          'logo' => Arr::get($validated, 'logo'),
+          'logo' => $logoPath,
           'side_commission' => Arr::get($validated, 'side_commission'),
           'side_commission_cc' => Arr::get($validated, 'side_commission_cc'),
           'auto_confirm_partial_by_amount' => filled($validated['auto_confirm_partial_by_amount'] ?? null)
@@ -225,8 +266,17 @@ class ProjectUserController extends Controller
           'auto_confirm_partial_by_percent' => filled($validated['auto_confirm_partial_by_percent'] ?? null)
             ? (float) $validated['auto_confirm_partial_by_percent']
             : null,
-          'status' => $originalStatus === 'approved' ? 'pending' : $originalStatus,
-        ]);
+          'service_fee' => $this->resolveServiceFee($request, $project->service_fee, $isModerator),
+        ];
+
+        $shouldSendToModeration =
+          $project->user_id === $user->id &&
+          $originalStatus === 'approved' &&
+          $this->hasNonTokenChanges($project, $projectData);
+
+        $projectData['status'] = $shouldSendToModeration ? 'pending' : $originalStatus;
+
+        $project->update($projectData);
 
         $existingTokenNetworks = ProjectTokenNetwork::where('project_id', $project->id)
           ->get()
@@ -262,7 +312,7 @@ class ProjectUserController extends Controller
           ]);
         });
 
-        if ($originalStatus === 'approved') {
+        if ($shouldSendToModeration) {
           $project->apiKeys()
             ->where('status', '!=', 'revoked')
             ->update(['status' => 'moderation']);
@@ -277,9 +327,17 @@ class ProjectUserController extends Controller
         }
       });
 
+      $redirectRoute = $request->string('context')->toString() === 'admin'
+        ? route('projects_admin.show', [$this->resolveStatusSlug($project->status), $project->ulid])
+        : route('projects.show', $project);
+
+      $flashMessage = $shouldSendToModeration
+        ? __('pages/projects.notifications.sent_to_moderation')
+        : __('pages/projects.notifications.saved');
+
       return redirect()
-        ->route('projects.show', $project)
-        ->with('flash.banner', __('pages/projects.notifications.sent_to_moderation'));
+        ->to($redirectRoute)
+        ->with('flash.banner', $flashMessage);
     }
 
     public function destroy(){
@@ -397,5 +455,71 @@ class ProjectUserController extends Controller
         'status' => 'revoked',
         'revoked_at' => now(),
       ]);
+    }
+
+    private function storeLogo(Request $request, ?string $existingPath = null): ?string
+    {
+      if (!$request->hasFile('logo')) {
+        return $existingPath;
+      }
+
+      $path = $request->file('logo')->store('projects/logos', 'public');
+
+      return Storage::disk('public')->url($path);
+    }
+
+    private function resolveServiceFee(Request $request, ?float $currentFee, bool $isModerator): ?float
+    {
+      $serviceFee = $request->input('service_fee');
+
+      if ($serviceFee === null || $serviceFee === '') {
+        return $currentFee ?? ($isModerator ? 1.5 : $currentFee);
+      }
+
+      return (float) $serviceFee;
+    }
+
+    private function hasNonTokenChanges(Project $project, array $payload): bool
+    {
+      $fields = [
+        'name',
+        'activity_type',
+        'description',
+        'platform',
+        'project_url',
+        'success_url',
+        'fail_url',
+        'notify_url',
+        'logo',
+        'side_commission',
+        'side_commission_cc',
+        'auto_confirm_partial_by_amount',
+        'auto_confirm_partial_by_percent',
+        'service_fee',
+      ];
+
+      foreach ($fields as $field) {
+        if ($project->getAttribute($field) != Arr::get($payload, $field)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    private function canModerate(User $user): bool
+    {
+      return $user->can('PROJECTS_MODERATION_EDIT') ||
+        $user->can('PROJECTS_REJECTED_EDIT') ||
+        $user->can('PROJECTS_ACTIVE_EDIT');
+    }
+
+    private function resolveStatusSlug(string $projectStatus): string
+    {
+      return match ($projectStatus) {
+        'approved' => 'active',
+        'rejected' => 'rejected',
+        default => 'moderation',
+      };
     }
 }

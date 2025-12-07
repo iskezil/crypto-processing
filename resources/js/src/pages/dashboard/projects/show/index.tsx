@@ -36,6 +36,7 @@ import { ProjectTabs, type ProjectTab } from './components/ProjectTabs';
 import { HistorySection, RevokedKeysAccordion } from './components/HistorySection';
 import { FeesSection } from './components/FeesSection';
 import { ModerationActions } from './components/ModerationActions';
+import { ServiceFeeField } from './components/ServiceFeeField';
 import { buildCallbackUrls, isValidHttpUrl, normalizeUrl } from '../utils';
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
@@ -102,6 +103,27 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     rejected: 'error',
   };
 
+  const adminStatusSlug = useMemo(() => {
+    if (project.status === 'approved') return 'active';
+    if (project.status === 'rejected') return 'rejected';
+    return 'moderation';
+  }, [project.status]);
+
+  const canAccessModeration =
+    can('PROJECTS_MODERATION_VIEW') || can('PROJECTS_REJECTED_VIEW') || can('PROJECTS_ACTIVE_VIEW');
+
+  const managementAction =
+    !isAdminView && canAccessModeration ? (
+      <Button
+        href={route('projects_admin.show', [adminStatusSlug, project.ulid], false)}
+        variant="contained"
+        color="inherit"
+        startIcon={<Iconify icon="solar:settings-bold" width={20} />}
+      >
+        {__('pages/projects.actions.manage')}
+      </Button>
+    ) : null;
+
   const tabs: ProjectTab[] = useMemo(() => {
     const items: ProjectTab[] = [
       { value: 'details', label: __('pages/projects.steps.details') },
@@ -118,7 +140,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     return items;
   }, [__, integrationAvailable, showModerationHistory]);
 
-  const Schema = useMemo(() => projectSchema(__), [__]);
+  const Schema = useMemo(() => projectSchema(__, { requireServiceFee: isAdminView }), [__, isAdminView]);
 
   const methods = useForm<ProjectFormValues>({
     resolver: zodResolver(Schema),
@@ -144,6 +166,12 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
         project.auto_confirm_partial_by_percent != null
           ? String(project.auto_confirm_partial_by_percent)
           : '',
+      service_fee:
+        isAdminView && project.service_fee == null
+          ? String(1.5)
+          : project.service_fee != null
+            ? String(project.service_fee)
+            : '',
     },
   });
 
@@ -209,21 +237,23 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     onCopied: (state: boolean) => void,
     successMessage: string
   ) => {
+    const text = value ?? '';
     onCopied(false);
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(value);
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
         onCopied(true);
         toast.success(successMessage);
         setTimeout(() => onCopied(false), 1500);
         return;
-      } catch (error) {
-        // fallback method below
       }
+    } catch (error) {
+      // fallback below
     }
 
     const textarea = document.createElement('textarea');
-    textarea.value = value;
+    textarea.value = text;
     textarea.style.position = 'fixed';
     textarea.style.left = '-9999px';
     document.body.appendChild(textarea);
@@ -231,10 +261,17 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     textarea.select();
 
     try {
-      document.execCommand('copy');
+      const successful = document.execCommand('copy');
+
+      if (!successful) {
+        throw new Error('Copy command was rejected');
+      }
+
       onCopied(true);
       toast.success(successMessage);
       setTimeout(() => onCopied(false), 1500);
+    } catch (error) {
+      toast.error(__('pages/projects.notifications.copy_failed'));
     } finally {
       document.body.removeChild(textarea);
     }
@@ -251,8 +288,11 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     copyValue(activeApiKey.plain_text_token || '', setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
   };
 
-  const handleCopySecret = async (secret: string) =>
-    copyValue(secret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+  const handleCopySecret = async () => {
+    console.log('generatedSecret', generatedSecret);
+    copyValue(generatedSecret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+  }
+
 
   const handleGenerateSecret = async () => {
     if (!integrationAvailable) return;
@@ -288,23 +328,58 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   };
 
   const onSubmit = handleSubmit((data) => {
-    const logo = data.logo instanceof File ? data.logo.name : data.logo || '';
+    const selectedTokenNetworkIds = data.token_network_ids.map((id) => Number(id));
+
+    const logoChanged = data.logo instanceof File ? true : (data.logo || '') !== (project.logo || '');
+    const formServiceFee = data.service_fee !== '' ? Number(data.service_fee) : null;
+
+    const hasNonTokenChanges =
+      logoChanged ||
+      data.name !== project.name ||
+      data.activity_type !== (project.activity_type || '') ||
+      data.description !== (project.description || '') ||
+      data.platform !== (project.platform || '') ||
+      data.project_url !== (project.project_url || '') ||
+      data.success_url !== (project.success_url || '') ||
+      data.fail_url !== (project.fail_url || '') ||
+      data.notify_url !== (project.notify_url || '') ||
+      data.side_commission !== (project.side_commission || '') ||
+      data.side_commission_cc !== (project.side_commission_cc || '') ||
+      data.auto_confirm_partial_by_amount !==
+        (project.auto_confirm_partial_by_amount != null
+          ? String(project.auto_confirm_partial_by_amount)
+          : '') ||
+      data.auto_confirm_partial_by_percent !==
+        (project.auto_confirm_partial_by_percent != null
+          ? String(project.auto_confirm_partial_by_percent)
+          : '') ||
+      (isAdminView && formServiceFee !== (project.service_fee != null ? Number(project.service_fee) : null));
+
+    const shouldSendToModeration = !isAdminView && project.status === 'approved' && hasNonTokenChanges;
 
     const payload = {
       ...data,
-      logo,
-      token_network_ids: data.token_network_ids.map((id) => Number(id)),
+      token_network_ids: selectedTokenNetworkIds,
       auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
         ? Number(data.auto_confirm_partial_by_amount)
         : null,
       auto_confirm_partial_by_percent: data.auto_confirm_partial_by_percent
         ? Number(data.auto_confirm_partial_by_percent)
         : null,
+      service_fee: formServiceFee,
+      context: isAdminView ? 'admin' : 'user',
     };
 
     router.patch(route('projects.update', project.ulid), payload, {
+      forceFormData: true,
+      preserveScroll: true,
       onSuccess: () => {
-        toast.success(__('pages/projects.notifications.sent_to_moderation'));
+        if (shouldSendToModeration) {
+          toast.success(__('pages/projects.notifications.sent_to_moderation'));
+          return;
+        }
+
+        toast.success(__('pages/projects.notifications.saved'));
       },
       onError: (errors) => {
         Object.entries(errors).forEach(([field, message]) => {
@@ -322,11 +397,14 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   };
 
   const handleModeration = (action: 'approve' | 'reject' | 'to_pending') => {
+    const serviceFeeValue = methods.getValues('service_fee');
+
     router.post(
       route('projects.moderate', project.ulid),
       {
         action,
         comment: moderationComment || null,
+        service_fee: serviceFeeValue === '' ? null : Number(serviceFeeValue),
       },
       {
         onSuccess: () => {
@@ -344,12 +422,24 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     isAdminView &&
     (can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT'));
 
+  const serviceFeeError = methods.formState.errors.service_fee?.message;
+
+  const serviceFeeControl =
+    canModerate && isAdminView ? (
+      <ServiceFeeField __={__} control={methods.control} error={serviceFeeError} />
+    ) : null;
+
   return (
     <>
       <title>{metadata.title}</title>
       <DashboardLayout>
         <DashboardContent maxWidth={false}>
-          <CustomBreadcrumbs heading={project.name} links={breadcrumbLinks} sx={{ mb: { xs: 3, md: 5 } }} />
+          <CustomBreadcrumbs
+            heading={project.name}
+            links={breadcrumbLinks}
+            action={managementAction}
+            sx={{ mb: { xs: 3, md: 5 } }}
+          />
 
           <ModerationActions
             canModerate={canModerate}
@@ -357,6 +447,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
             moderationComment={moderationComment}
             onChangeComment={setModerationComment}
             onModerate={handleModeration}
+            serviceFeeControl={serviceFeeControl}
             labels={{
               comment: __('pages/projects.form.moderation_comment'),
               approve: __('pages/projects.actions.approve'),
@@ -439,7 +530,11 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                   )}
 
                   {currentTab === 'fees' && (
-                    <FeesSection __={__} integrationAvailable={integrationAvailable} serviceFee={project.service_fee} />
+                    <FeesSection
+                      __={__}
+                      integrationAvailable={integrationAvailable}
+                      serviceFee={project.service_fee}
+                    />
                   )}
 
                   {currentTab === 'history' && showModerationHistory && (
@@ -494,7 +589,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                       <InputAdornment position="end">
                         <IconButton
                           color={isSecretCopied ? 'success' : 'default'}
-                          onClick={() => handleCopySecret(generatedSecret)}
+                          onClick={handleCopySecret}
                         >
                           <Iconify icon="solar:copy-bold" width={18} />
                         </IconButton>

@@ -1,6 +1,7 @@
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { FileError } from 'react-dropzone';
 
 import { Field } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
@@ -29,6 +30,43 @@ export function LinksStep({
 }: LinksStepProps) {
   const { __ } = useLang();
   const platformPlaceholder = __('pages/projects.links_section.platform_placeholder');
+
+  const validateLogo = async (file: File): Promise<FileError | null> => {
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      return { code: 'file-invalid-type', message: __('pages/projects.validation.logo_type') };
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      return { code: 'file-too-large', message: __('pages/projects.validation.logo_size') };
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    return new Promise<FileError | null>((resolve) => {
+      const image = new Image();
+
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+
+        const ratio = image.width / image.height;
+        const isValidRatio = Math.abs(ratio - 3) < 0.01;
+
+        if (!isValidRatio) {
+          resolve({ code: 'invalid-dimensions', message: __('pages/projects.validation.logo_ratio') });
+          return;
+        }
+
+        resolve(null);
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve({ code: 'file-invalid', message: __('pages/projects.validation.logo_type') });
+      };
+
+      image.src = objectUrl;
+    });
+  };
 
   return (
     <Stack spacing={3}>
@@ -105,6 +143,9 @@ export function LinksStep({
               <Typography variant="body2" color="text.secondary">{logoDescription}</Typography>
             </Stack>
           }
+          accept={{ 'image/png': [], 'image/jpeg': [] }}
+          maxSize={2 * 1024 * 1024}
+          validator={validateLogo}
           slotProps={{
             wrapper: { sx: { alignSelf: 'stretch' } },
           }}
