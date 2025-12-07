@@ -21,6 +21,9 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 
 import Timeline from '@mui/lab/Timeline';
 import TimelineItem from '@mui/lab/TimelineItem';
@@ -662,20 +665,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                             </Stack>
                           </Stack>
 
-                          {revokedKeys.length > 0 && (
-                            <Stack spacing={1}>
-                              <Typography variant="subtitle2">
-                                {__('pages/projects.integration.revoked_keys')}
-                              </Typography>
-                              {revokedKeys.map((key) => (
-                                <Alert key={key.id} severity="info">
-                                  {__('pages/projects.integration.revoked_key_item', {
-                                    date: key.revoked_at ?? key.created_at,
-                                  })}
-                                </Alert>
-                              ))}
-                            </Stack>
-                          )}
                         </Stack>
                       )}
 
@@ -767,6 +756,44 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                             );
                           })}
                         </Timeline>
+                      )}
+
+                      {revokedKeys.length > 0 && (
+                        <Accordion>
+                          <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-linear" width={18} />}>
+                            <Typography variant="subtitle2">
+                              {__('pages/projects.integration.revoked_keys')}
+                            </Typography>
+                          </AccordionSummary>
+
+                          <AccordionDetails>
+                            <Timeline sx={{ p: 0 }}>
+                              {revokedKeys.map((key, index) => (
+                                <TimelineItem key={key.id}>
+                                  <TimelineSeparator>
+                                    <TimelineDot color="info" />
+                                    {index < revokedKeys.length - 1 && <TimelineConnector />}
+                                  </TimelineSeparator>
+                                  <TimelineContent>
+                                    <Stack spacing={0.5}>
+                                      <Typography variant="subtitle2">
+                                        {__('pages/projects.integration.revoked_key_item', {
+                                          date: key.revoked_at ?? key.created_at,
+                                        })}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {__('pages/projects.integration.generated_at', { date: key.created_at })}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {__('pages/projects.integration.key', { key: key.secret })}
+                                      </Typography>
+                                    </Stack>
+                                  </TimelineContent>
+                                </TimelineItem>
+                              ))}
+                            </Timeline>
+                          </AccordionDetails>
+                        </Accordion>
                       )}
                     </Stack>
                   )}

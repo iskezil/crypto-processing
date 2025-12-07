@@ -306,11 +306,25 @@ class ProjectUserController extends Controller
           ->latest()
           ->first();
 
-        if ($activeKey) {
-          $this->revokeApiKey($activeKey);
+        if (!$activeKey) {
+          return $this->issueProjectApiKey($project, $this->resolveApiKeyStatus($project->status));
         }
 
-        return $this->issueProjectApiKey($project, $this->resolveApiKeyStatus($project->status));
+        $newKey = $project->apiKeys()->create([
+          'plain_text_token' => $activeKey->getAttribute('plain_text_token'),
+          'personal_access_token_id' => $activeKey->getAttribute('personal_access_token_id'),
+          'secret' => Str::random(64),
+          'status' => $activeKey->getAttribute('status'),
+        ]);
+
+        $activeKey->update([
+          'status' => 'revoked',
+          'revoked_at' => now(),
+          'plain_text_token' => null,
+          'personal_access_token_id' => null,
+        ]);
+
+        return $newKey;
       });
 
       $project->load([

@@ -105,6 +105,7 @@ return [
         'generate_secret' => 'Создать новый',
         'copy' => 'Скопировать',
         'copied' => 'Скопировано',
+        'key' => 'Ключ: {key}',
         'generated_at' => 'Создан: {date}',
         'revoked_keys' => 'Отозванные ключи',
         'revoked_key_item' => 'Отозван {date}',
