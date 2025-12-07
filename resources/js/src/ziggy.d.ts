@@ -82,6 +82,12 @@ declare module 'ziggy-js' {
         "binding": "ulid";
       }
     ];
+    'projects_admin.show': {
+      uri: 'admin/projects/{status}/{project}',
+      methods: ['GET', 'HEAD'],
+      parameters: ['status', 'project'],
+      bindings: { project: 'ulid' },
+    },
     "pos.show": [
       {
         "name": "project";

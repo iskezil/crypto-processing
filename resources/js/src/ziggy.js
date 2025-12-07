@@ -81,6 +81,12 @@ export const Ziggy = {
       parameters: ['project'],
       bindings: { project: 'ulid' },
     },
+    'projects_admin.show': {
+      uri: 'admin/projects/{status}/{project}',
+      methods: ['GET', 'HEAD'],
+      parameters: ['status', 'project'],
+      bindings: { project: 'ulid' },
+    },
     'pos.show': {
       uri: 'pos/{project}',
       methods: ['GET', 'HEAD'],
