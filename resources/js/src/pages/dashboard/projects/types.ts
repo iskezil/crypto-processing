@@ -42,4 +42,8 @@ export type Project = {
   token_networks?: TokenNetwork[];
   api_keys?: ProjectApiKey[];
   service_fee?: number | null;
+  side_commission?: 'client' | 'merchant' | null;
+  side_commission_cc?: 'client' | 'merchant' | null;
+  auto_confirm_partial_by_amount?: number | null;
+  auto_confirm_partial_by_percent?: number | null;
 };

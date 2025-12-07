@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
@@ -36,6 +36,7 @@ import { ProjectTabs, type ProjectTab } from './components/ProjectTabs';
 import { HistorySection } from './components/HistorySection';
 import { FeesSection } from './components/FeesSection';
 import { ModerationActions } from './components/ModerationActions';
+import { buildCallbackUrls, isValidHttpUrl, normalizeUrl } from '../utils';
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
 
@@ -131,6 +132,16 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       logo: project.logo || null,
       token_network_ids: (project.token_networks || []).map((item) => item.id),
       accept: true,
+      side_commission: project.side_commission || 'client',
+      side_commission_cc: project.side_commission_cc || 'client',
+      auto_confirm_partial_by_amount:
+        project.auto_confirm_partial_by_amount != null
+          ? String(project.auto_confirm_partial_by_amount)
+          : '',
+      auto_confirm_partial_by_percent:
+        project.auto_confirm_partial_by_percent != null
+          ? String(project.auto_confirm_partial_by_percent)
+          : '',
     },
   });
 
@@ -139,12 +150,49 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     watch,
     setError,
     trigger,
+    setValue,
+    getValues,
     formState: { isSubmitting },
   } = methods;
 
   const platform = watch('platform');
   const projectUrlLabel = __(platformLabels[platform]);
-  const paymentPageLink = route('pos.show', project.ulid, false);
+  const projectUrl = watch('project_url');
+  const projectUrlPlaceholder = platform === 'telegram_bot' ? '@username' : 'https://';
+  const paymentPageLink = route('pos.show', project.ulid, true);
+  const autoFillBaseRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (platform !== 'website') {
+      autoFillBaseRef.current = null;
+      return;
+    }
+
+    if (!isValidHttpUrl(projectUrl)) return;
+
+    const normalizedUrl = normalizeUrl(projectUrl);
+    const callbacks = buildCallbackUrls(normalizedUrl);
+    const previousBase = autoFillBaseRef.current;
+    const previousCallbacks = previousBase ? buildCallbackUrls(previousBase) : null;
+    const currentValues = getValues();
+
+    const shouldUpdate = (currentValue?: string, previousValue?: string, nextValue?: string) =>
+      !currentValue || (!!previousValue && currentValue === previousValue) || currentValue === nextValue;
+
+    if (shouldUpdate(currentValues.success_url, previousCallbacks?.success, callbacks.success)) {
+      setValue('success_url', callbacks.success);
+    }
+
+    if (shouldUpdate(currentValues.fail_url, previousCallbacks?.fail, callbacks.fail)) {
+      setValue('fail_url', callbacks.fail);
+    }
+
+    if (shouldUpdate(currentValues.notify_url, previousCallbacks?.notify, callbacks.notify)) {
+      setValue('notify_url', callbacks.notify);
+    }
+
+    autoFillBaseRef.current = normalizedUrl;
+  }, [getValues, platform, projectUrl, setValue]);
 
   const breadcrumbLinks: BreadcrumbLink[] =
     breadcrumbs ?? [
@@ -193,7 +241,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     copyValue(paymentPageLink, setIsPaymentLinkCopied, __('pages/projects.notifications.payment_link_copied'));
 
   const handleCopyShopId = async () =>
-    copyValue(project.ulid, setIsShopIdCopied, __('pages/projects.notifications.api_key_copied'));
+    copyValue(project.ulid, setIsShopIdCopied, __('pages/projects.notifications.shop_id_copied'));
 
   const handleCopyApiKey = async () => {
     if (!activeApiKey) return;
@@ -243,6 +291,12 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       ...data,
       logo,
       token_network_ids: data.token_network_ids.map((id) => Number(id)),
+      auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
+        ? Number(data.auto_confirm_partial_by_amount)
+        : null,
+      auto_confirm_partial_by_percent: data.auto_confirm_partial_by_percent
+        ? Number(data.auto_confirm_partial_by_percent)
+        : null,
     };
 
     router.patch(route('projects.update', project.ulid), payload, {
@@ -266,6 +320,12 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       links: ['platform', 'project_url', 'logo'],
       currencies: ['token_network_ids', 'accept'],
       integration: ['success_url', 'fail_url', 'notify_url'],
+      fees: [
+        'side_commission',
+        'side_commission_cc',
+        'auto_confirm_partial_by_amount',
+        'auto_confirm_partial_by_percent',
+      ],
     };
 
     const fields = tabFields[currentTab];
@@ -363,7 +423,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                         other: __('pages/projects.platforms.other'),
                       }}
                       projectUrlLabel={projectUrlLabel}
-                      projectUrlPlaceholder="https://"
+                      projectUrlPlaceholder={projectUrlPlaceholder}
                       logoTitle={__('pages/projects.helpers.logo_title')}
                       logoDescription={__('pages/projects.helpers.logo_description')}
                       showCallbacks={false}
@@ -409,7 +469,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                     />
                   )}
 
-                  {currentTab !== 'fees' && currentTab !== 'history' && (
+                  {currentTab !== 'history' && (
                     <Stack direction="row" spacing={2} justifyContent="flex-end">
                       <Button type="submit" variant="contained" disabled={isSubmitting}>
                         {__('pages/projects.actions.save')}
@@ -438,6 +498,9 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                 <TextField
                   label={__('pages/projects.integration.api_secret')}
                   value={generatedSecret}
+                  margin="dense"
+                  size="small"
+                  variant="filled"
                   InputProps={{
                     readOnly: true,
                     endAdornment: (

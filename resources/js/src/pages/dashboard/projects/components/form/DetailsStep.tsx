@@ -35,20 +35,16 @@ export function DetailsStep({
           title="Cсылка на постоянную страницу оплаты:"
           description="Используйте ссылку для приема платежей без интеграции."
         >
-          <TextField
-            fullWidth
-            value={paymentLink}
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton color={paymentLinkCopied ? 'success' : 'default'} onClick={() => onCopyPaymentLink?.()}>
-                    <Iconify icon="solar:copy-bold" />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
+            <Field.Text name="name" value={paymentLink} placeholder={'Ваша ссылка'} InputProps={{
+                readOnly: true,
+                endAdornment: (
+                    <InputAdornment position="end">
+                        <IconButton color={paymentLinkCopied ? 'success' : 'default'} onClick={() => onCopyPaymentLink?.()}>
+                            <Iconify icon="solar:copy-bold" />
+                        </IconButton>
+                    </InputAdornment>
+                ),
+            }}/>
         </FormRow>
       )}
 
@@ -56,17 +52,7 @@ export function DetailsStep({
         title="Название проекта"
         description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
       >
-          <TextField
-              autoFocus
-              size={'small'}
-              margin="dense"
-              fullWidth
-              variant="filled"
-              label={namePlaceholder}
-              value={''}
-              onChange={() => {}}
-          />
-        {/*<Field.Text name="name" placeholder={namePlaceholder} />*/}
+        <Field.Text name="name" placeholder={namePlaceholder} autoFocus />
       </FormRow>
 
       <FormRow

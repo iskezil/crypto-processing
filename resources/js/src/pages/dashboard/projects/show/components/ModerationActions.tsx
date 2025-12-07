@@ -41,6 +41,10 @@ export function ModerationActions({
           label={labels.comment}
           multiline
           minRows={2}
+          fullWidth
+          margin="dense"
+          size="small"
+          variant="filled"
           value={moderationComment}
           onChange={(event) => onChangeComment(event.target.value)}
         />

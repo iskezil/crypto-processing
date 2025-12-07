@@ -62,6 +62,9 @@ export function RHFSelect({
           {...field}
           select
           fullWidth
+          margin={other.margin ?? 'dense'}
+          size={other.size ?? 'small'}
+          variant={other.variant ?? 'filled'}
           error={!!error}
           helperText={error?.message ?? helperText}
           slotProps={merge(baseSlotProps, slotProps)}

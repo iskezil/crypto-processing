@@ -31,7 +31,7 @@ export function LinksStep({
       <Typography variant="h6">{title}</Typography>
 
       <FormRow title="Платформа проекта" description="Выбирите платформу проекта.">
-        <Field.Select name="platform">
+        <Field.Select name="platform" placeholder="Выбирите платформу">
           <MenuItem value="website">{platformLabels.website}</MenuItem>
           <MenuItem value="telegram_bot">{platformLabels.telegram_bot}</MenuItem>
           <MenuItem value="vk_bot">{platformLabels.vk_bot}</MenuItem>

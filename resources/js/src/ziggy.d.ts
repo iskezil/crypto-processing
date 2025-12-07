@@ -75,6 +75,13 @@ declare module 'ziggy-js' {
     "projects.index": [];
     "projects.create": [];
     "projects.store": [];
+    "projects.update": [
+      {
+        "name": "project";
+        "required": true;
+        "binding": "ulid";
+      }
+    ];
     "projects.show": [
       {
         "name": "project";
@@ -82,18 +89,24 @@ declare module 'ziggy-js' {
         "binding": "ulid";
       }
     ];
+    'projects.api_keys.regenerate': {
+      uri: 'projects/{project}/api-keys/regenerate';
+      methods: ['POST'];
+      parameters: ['project'];
+      bindings: { project: 'ulid' };
+    };
     'projects.api_keys.secret': {
-      uri: 'projects/{project}/api-keys/secret',
-      methods: ['POST'],
-      parameters: ['project'],
-      bindings: { project: 'ulid' },
-    },
+      uri: 'projects/{project}/api-keys/secret';
+      methods: ['POST'];
+      parameters: ['project'];
+      bindings: { project: 'ulid' };
+    };
     'projects_admin.show': {
-      uri: 'admin/projects/{status}/{project}',
-      methods: ['GET', 'HEAD'],
-      parameters: ['status', 'project'],
-      bindings: { project: 'ulid' },
-    },
+      uri: 'admin/projects/{status}/{project}';
+      methods: ['GET', 'HEAD'];
+      parameters: ['status', 'project'];
+      bindings: { project: 'ulid' };
+    };
     "pos.show": [
       {
         "name": "project";
@@ -138,4 +151,3 @@ declare module 'ziggy-js' {
     "logout": [];
   }
 }
-export {};

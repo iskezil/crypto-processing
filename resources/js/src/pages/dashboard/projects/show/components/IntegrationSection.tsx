@@ -1,19 +1,21 @@
+import { useState } from 'react';
+
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 
 import TextField from '@mui/material/TextField';
 
 import { Field } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
+import { ConfirmDialog } from 'src/components/custom-dialog/confirm-dialog';
 
 import type { ProjectApiKey } from '../../types';
 import { FormRow } from '../../components/form';
-
-const defaultTextStyles = { fontWeight: 600, cursor: 'pointer' } as const;
 
 type IntegrationSectionProps = {
   __: (key: string, options?: Record<string, unknown>) => string;
@@ -44,6 +46,8 @@ export function IntegrationSection({
   onCopyShopId,
   onGenerateSecret,
 }: IntegrationSectionProps) {
+  const [isSecretConfirmOpen, setIsSecretConfirmOpen] = useState(false);
+
   if (!integrationAvailable) {
     return <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>;
   }
@@ -71,6 +75,9 @@ export function IntegrationSection({
               <TextField
                 label={__('pages/projects.integration.api_key')}
                 value={activeApiKey.plain_text_token || ''}
+                margin="dense"
+                size="small"
+                variant="filled"
                 InputProps={{
                   readOnly: true,
                   endAdornment: (
@@ -90,6 +97,9 @@ export function IntegrationSection({
               <TextField
                 label={__('pages/projects.integration.shop_id')}
                 value={projectUlid}
+                margin="dense"
+                size="small"
+                variant="filled"
                 InputProps={{
                   readOnly: true,
                   endAdornment: (
@@ -105,6 +115,9 @@ export function IntegrationSection({
               <TextField
                 label={__('pages/projects.integration.api_secret')}
                 value={__('pages/projects.integration.secret_placeholder')}
+                margin="dense"
+                size="small"
+                variant="filled"
                 InputProps={{
                   readOnly: true,
                   startAdornment: (
@@ -114,22 +127,16 @@ export function IntegrationSection({
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        alignItems="center"
-                        sx={{
-                          ...styles.generateSecret,
-                          pointerEvents: isGeneratingSecret ? 'none' : 'auto',
-                          opacity: isGeneratingSecret ? 0.6 : 1,
-                        }}
-                        onClick={isGeneratingSecret ? undefined : onGenerateSecret}
+                      <Button
+                        color="primary"
+                        variant="text"
+                        size="small"
+                        startIcon={<Iconify icon="solar:lock-keyhole-bold" width={18} />}
+                        onClick={() => setIsSecretConfirmOpen(true)}
+                        disabled={isGeneratingSecret}
                       >
-                        <Iconify icon="solar:add-circle-bold" width={18} />
-                        <Typography variant="body2" sx={styles.generateSecretText}>
-                          {__('pages/projects.integration.generate_secret')}
-                        </Typography>
-                      </Stack>
+                        {__('pages/projects.integration.generate_secret')}
+                      </Button>
                     </InputAdornment>
                   ),
                 }}
@@ -165,17 +172,26 @@ export function IntegrationSection({
           <Field.Text name="notify_url" placeholder="https://" />
         </FormRow>
       </Stack>
+
+      <ConfirmDialog
+        open={isSecretConfirmOpen}
+        onClose={() => setIsSecretConfirmOpen(false)}
+        title={__('pages/projects.integration.secret_confirm.title')}
+        content={__('pages/projects.integration.secret_confirm.description')}
+        action={
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setIsSecretConfirmOpen(false);
+              onGenerateSecret();
+            }}
+            disabled={isGeneratingSecret}
+          >
+            {__('pages/projects.integration.secret_confirm.action')}
+          </Button>
+        }
+      />
     </Stack>
   );
 }
-
-const styles = {
-  generateSecret: {
-    color: 'primary.main',
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    '&:hover': { textDecoration: 'underline' },
-  },
-  generateSecretText: { ...defaultTextStyles },
-};

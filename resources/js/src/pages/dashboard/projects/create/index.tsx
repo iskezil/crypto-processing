@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
@@ -24,6 +24,7 @@ import { Iconify } from 'src/components/iconify';
 import { CurrenciesStep, DetailsStep, LinksStep } from '../components/form';
 import { projectSchema, type ProjectFormValues } from './schema';
 import { type TokenNetwork } from '../types';
+import { buildCallbackUrls, isValidHttpUrl, normalizeUrl } from '../utils';
 
 // ----------------------------------------------------------------------
 
@@ -58,6 +59,10 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
       logo: null,
       token_network_ids: [],
       accept: false,
+      side_commission: 'client',
+      side_commission_cc: 'client',
+      auto_confirm_partial_by_amount: '',
+      auto_confirm_partial_by_percent: '',
     },
   });
 
@@ -66,11 +71,48 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
     watch,
     setError,
     trigger,
+    setValue,
+    getValues,
     formState: { isSubmitting },
   } = methods;
 
   const platform = watch('platform');
+  const projectUrl = watch('project_url');
   const projectUrlLabel = __(platformLabels[platform]);
+  const projectUrlPlaceholder = platform === 'telegram_bot' ? '@username' : 'https://';
+  const autoFillBaseRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (platform !== 'website') {
+      autoFillBaseRef.current = null;
+      return;
+    }
+
+    if (!isValidHttpUrl(projectUrl)) return;
+
+    const normalizedUrl = normalizeUrl(projectUrl);
+    const callbacks = buildCallbackUrls(normalizedUrl);
+    const previousBase = autoFillBaseRef.current;
+    const previousCallbacks = previousBase ? buildCallbackUrls(previousBase) : null;
+    const currentValues = getValues();
+
+    const shouldUpdate = (currentValue?: string, previousValue?: string, nextValue?: string) =>
+      !currentValue || (!!previousValue && currentValue === previousValue) || currentValue === nextValue;
+
+    if (shouldUpdate(currentValues.success_url, previousCallbacks?.success, callbacks.success)) {
+      setValue('success_url', callbacks.success);
+    }
+
+    if (shouldUpdate(currentValues.fail_url, previousCallbacks?.fail, callbacks.fail)) {
+      setValue('fail_url', callbacks.fail);
+    }
+
+    if (shouldUpdate(currentValues.notify_url, previousCallbacks?.notify, callbacks.notify)) {
+      setValue('notify_url', callbacks.notify);
+    }
+
+    autoFillBaseRef.current = normalizedUrl;
+  }, [getValues, platform, projectUrl, setValue]);
 
   const steps = useMemo(
     () => [
@@ -101,6 +143,12 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
       ...data,
       logo,
       token_network_ids: data.token_network_ids.map((id) => Number(id)),
+      auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
+        ? Number(data.auto_confirm_partial_by_amount)
+        : null,
+      auto_confirm_partial_by_percent: data.auto_confirm_partial_by_percent
+        ? Number(data.auto_confirm_partial_by_percent)
+        : null,
     };
 
     router.post(route('projects.store'), payload, {
@@ -171,16 +219,16 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                     {activeStep === 1 && (
                       <LinksStep
                         title={steps[1].label}
-                        platformLabels={{
-                          website: __('pages/projects.platforms.website'),
-                          telegram_bot: __('pages/projects.platforms.telegram_bot'),
-                          vk_bot: __('pages/projects.platforms.vk_bot'),
-                          other: __('pages/projects.platforms.other'),
-                        }}
-                        projectUrlLabel={projectUrlLabel}
-                        projectUrlPlaceholder="https://"
-                        logoTitle={__('pages/projects.helpers.logo_title')}
-                        logoDescription={__('pages/projects.helpers.logo_description')}
+                      platformLabels={{
+                        website: __('pages/projects.platforms.website'),
+                        telegram_bot: __('pages/projects.platforms.telegram_bot'),
+                        vk_bot: __('pages/projects.platforms.vk_bot'),
+                        other: __('pages/projects.platforms.other'),
+                      }}
+                      projectUrlLabel={projectUrlLabel}
+                      projectUrlPlaceholder={projectUrlPlaceholder}
+                      logoTitle={__('pages/projects.helpers.logo_title')}
+                      logoDescription={__('pages/projects.helpers.logo_description')}
                       />
                     )}
 

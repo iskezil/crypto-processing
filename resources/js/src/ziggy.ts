@@ -95,6 +95,12 @@ export const Ziggy: Config = {
       parameters: ['project'],
       bindings: { project: 'ulid' },
     },
+    'projects.api_keys.regenerate': {
+      uri: 'projects/{project}/api-keys/regenerate',
+      methods: ['POST'],
+      parameters: ['project'],
+      bindings: { project: 'ulid' },
+    },
     'projects_admin.show': {
       uri: 'admin/projects/{status}/{project}',
       methods: ['GET', 'HEAD'],

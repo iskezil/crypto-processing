@@ -21,6 +21,8 @@ export function RHFTextField({
   const { control } = useFormContext();
 
   const isNumberType = type === 'number';
+  const { label: labelProp, placeholder, InputLabelProps, ...rest } = other;
+  const label = labelProp ?? placeholder;
 
   return (
     <Controller
@@ -30,6 +32,9 @@ export function RHFTextField({
         <TextField
           {...field}
           fullWidth
+          margin={rest.margin ?? 'dense'}
+          size={rest.size ?? 'small'}
+          variant={rest.variant ?? 'filled'}
           value={isNumberType ? transformValue(field.value) : field.value}
           onChange={(event) => {
             const transformedValue = isNumberType
@@ -48,6 +53,12 @@ export function RHFTextField({
           type={isNumberType ? 'text' : type}
           error={!!error}
           helperText={error?.message ?? helperText}
+          label={label}
+          placeholder={placeholder}
+          InputLabelProps={{
+            ...InputLabelProps,
+            ...(label ? {} : { shrink: true }),
+          }}
           slotProps={{
             ...slotProps,
             htmlInput: {
@@ -59,7 +70,7 @@ export function RHFTextField({
               autoComplete: 'new-password', // Disable autocomplete and autofill
             },
           }}
-          {...other}
+          {...rest}
         />
       )}
     />

@@ -75,9 +75,21 @@ export const Ziggy = {
     'projects.index': { uri: 'projects', methods: ['GET', 'HEAD'] },
     'projects.create': { uri: 'projects/create', methods: ['GET', 'HEAD'] },
     'projects.store': { uri: 'projects', methods: ['POST'] },
+    'projects.update': {
+      uri: 'projects/{project}',
+      methods: ['PATCH'],
+      parameters: ['project'],
+      bindings: { project: 'ulid' },
+    },
     'projects.show': {
       uri: 'projects/{project}',
       methods: ['GET', 'HEAD'],
+      parameters: ['project'],
+      bindings: { project: 'ulid' },
+    },
+    'projects.api_keys.regenerate': {
+      uri: 'projects/{project}/api-keys/regenerate',
+      methods: ['POST'],
       parameters: ['project'],
       bindings: { project: 'ulid' },
     },
