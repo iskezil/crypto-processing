@@ -10,6 +10,8 @@ return [
         'create' => 'Create project',
         'save' => 'Save',
         'cancel' => 'Cancel',
+        'next' => 'Next',
+        'previous' => 'Back',
     ],
     'table' => [
         'name' => 'Name',
@@ -45,6 +47,16 @@ return [
         'token_networks' => 'Project currencies',
         'test_mode' => 'Test mode',
         'accept_terms' => 'I accept service terms',
+    ],
+    'steps' => [
+        'details' => 'Basic information',
+        'links' => 'Project settings',
+        'currencies' => 'Project currencies',
+    ],
+    'helpers' => [
+        'description' => 'Minimum 100 characters. Maximum 210 characters.',
+        'logo_title' => 'Drag & drop your logo',
+        'logo_description' => 'PNG, SVG or JPG up to 2 MB',
     ],
     'validation' => [
         'tokens' => 'Select at least one token network',
