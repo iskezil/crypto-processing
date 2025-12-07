@@ -5,7 +5,6 @@ import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { route } from 'src/routes/route';
 import { RouterLink } from 'src/routes/components';
 import { toast } from 'src/components/snackbar';
@@ -251,7 +250,7 @@ export default function List({ users, roles }: Props) {
           <CustomBreadcrumbs
             heading={__('pages/users.breadcrumbs.users')}
             links={[
-              { name: __('pages/users.breadcrumbs.dashboard'), href: paths.dashboard.root },
+              { name: __('pages/users.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
               { name: __('pages/users.breadcrumbs.users') },
             ]}
             action={

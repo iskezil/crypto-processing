@@ -8,10 +8,10 @@ import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog/confirm-dialog';
 import { toast } from 'src/components/snackbar';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { PERMISSION_MODULE_NAMES, PERMISSION_NAMES, ROLE_NAMES } from 'src/enums/rights';
 import { useAuthz } from 'src/lib/authz';
 import { Can } from 'src/components/Can';
+import { route } from 'src/routes/route';
 
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
@@ -173,7 +173,7 @@ export default function List({ permissions, roles }: Props) {
           <CustomBreadcrumbs
             heading={__('pages/permissions.breadcrumbs.permissions')}
             links={[
-              { name: __('pages/permissions.breadcrumbs.dashboard'), href: paths.dashboard.root },
+              { name: __('pages/permissions.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
               { name: __('pages/permissions.breadcrumbs.permissions') },
             ]}
             action={

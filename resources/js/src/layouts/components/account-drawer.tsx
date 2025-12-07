@@ -13,7 +13,7 @@ import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 
-import { paths } from 'src/routes/paths';
+import { route } from 'src/routes/route';
 import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
@@ -84,7 +84,9 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
     >
       {data.map((option) => {
         const rootLabel = pathname.includes('/dashboard') ? 'Home' : 'Dashboard';
-        const rootHref = pathname.includes('/dashboard') ? '/' : paths.dashboard.root;
+        const rootHref = pathname.includes('/dashboard')
+          ? route('home', undefined, false)
+          : route('dashboard', undefined, false);
 
         return (
           <MenuItem key={option.label}>

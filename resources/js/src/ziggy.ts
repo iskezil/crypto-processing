@@ -12,6 +12,10 @@ export const Ziggy: Config = {
 
     'locale.update': { uri: 'locale', methods: ['PATCH'] },
 
+    home: { uri: '/', methods: ['GET', 'HEAD'] },
+    dashboard: { uri: 'dashboard', methods: ['GET', 'HEAD'] },
+    faqs: { uri: 'faqs', methods: ['GET', 'HEAD'] },
+
     'users.index': { uri: 'users', methods: ['GET', 'HEAD'] },
     'users.create': { uri: 'users/create', methods: ['GET', 'HEAD'] },
     'users.store': { uri: 'users', methods: ['POST'] },
@@ -78,6 +82,11 @@ export const Ziggy: Config = {
       methods: ['GET', 'HEAD'],
       parameters: ['project'],
       bindings: { project: 'ulid' },
+    },
+    'pos.show': {
+      uri: 'pos/{project}',
+      methods: ['GET', 'HEAD'],
+      parameters: ['project'],
     },
     'projects_moderation.index': {
       uri: 'admin/projects/moderation',

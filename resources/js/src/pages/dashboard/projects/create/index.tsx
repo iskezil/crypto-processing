@@ -15,7 +15,6 @@ import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { Field, Form } from 'src/components/hook-form';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { route } from 'src/routes/route';
 import type { PageProps } from '@inertiajs/core';
 import { toast } from 'src/components/snackbar';
@@ -142,8 +141,8 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
           <CustomBreadcrumbs
             heading={__('pages/projects.breadcrumbs.create')}
             links={[
-              { name: __('pages/projects.breadcrumbs.dashboard'), href: paths.dashboard.root },
-              { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index') },
+              { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+              { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
               { name: __('pages/projects.breadcrumbs.create') },
             ]}
             sx={{ mb: { xs: 3, md: 5 } }}

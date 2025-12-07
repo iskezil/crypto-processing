@@ -3,7 +3,6 @@ import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { Label } from 'src/components/label';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { Iconify } from 'src/components/iconify';
 import { Can } from 'src/components/Can';
 import { route } from 'src/routes/route';
@@ -50,7 +49,7 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
           <CustomBreadcrumbs
             heading={__('pages/projects.breadcrumbs.list')}
             links={[
-              { name: __('pages/projects.breadcrumbs.dashboard'), href: paths.dashboard.root },
+              { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
               { name: __('pages/projects.breadcrumbs.list') },
             ]}
             action={
@@ -58,7 +57,7 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
                 <Button
                   variant="contained"
                   startIcon={<Iconify icon="mingcute:add-line" />}
-                  href={route('projects.create')}
+                  href={route('projects.create', undefined, false)}
                 >
                   {__('pages/projects.actions.create')}
                 </Button>
@@ -82,7 +81,11 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
                   {projects.map((project) => (
                     <TableRow key={project.id} hover>
                       <TableCell>
-                        <Link href={`/projects/${project.ulid}`} color="inherit" underline="hover">
+                        <Link
+                          href={route('projects.show', project.ulid, false)}
+                          color="inherit"
+                          underline="hover"
+                        >
                           {project.name}
                         </Link>
                       </TableCell>

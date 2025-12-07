@@ -6,6 +6,9 @@ declare module 'ziggy-js' {
     "ignition.executeSolution": [];
     "ignition.updateConfig": [];
     "locale.update": [];
+    "home": [];
+    "dashboard": [];
+    "faqs": [];
     "users.index": [];
     "users.create": [];
     "users.store": [];
@@ -77,6 +80,12 @@ declare module 'ziggy-js' {
         "name": "project";
         "required": true;
         "binding": "ulid";
+      }
+    ];
+    "pos.show": [
+      {
+        "name": "project";
+        "required": true;
       }
     ];
     "projects_moderation.index": [];

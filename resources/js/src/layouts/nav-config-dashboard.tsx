@@ -2,7 +2,6 @@ import type { NavSectionProps } from 'src/components/nav-section';
 
 import { useMemo } from 'react';
 
-import { paths } from 'src/routes/paths';
 import { route } from 'src/routes/route';
 
 import { CONFIG } from 'src/global-config';
@@ -59,7 +58,7 @@ export function useNavData(): NavSectionProps['data'] {
 
   const projectsMenu = (props.projectsMenu || []).map((project) => ({
     title: project.name,
-    path: `/projects/${project.ulid}`,
+    path: route('projects.show', project.ulid, false),
     status: project.status,
   }));
 
@@ -76,13 +75,13 @@ export function useNavData(): NavSectionProps['data'] {
         items: [
           {
             title: __('navigation.overview.one'),
-            path: paths.dashboard.root,
+            path: route('dashboard', undefined, false),
             icon: ICONS.dashboard,
             info: <Label>v{CONFIG.appVersion}</Label>,
           },
           {
             title: __('navigation.overview.projects'),
-            path: paths.dashboard.projects,
+            path: route('projects.index', undefined, false),
             icon: ICONS.banking,
             anyOf: ['PROJECTS_VIEW', 'PROJECTS_CREATE'],
             children: [
@@ -97,7 +96,7 @@ export function useNavData(): NavSectionProps['data'] {
               })),
               {
                 title: __('pages/projects.actions.create'),
-                path: paths.projects.create,
+                path: route('projects.create', undefined, false),
                 permission: 'PROJECTS_CREATE',
                 icon: ICONS.menuItem,
               },
@@ -135,13 +134,13 @@ export function useNavData(): NavSectionProps['data'] {
           },
           {
             title: __('navigation.management.projects'),
-            path: paths.dashboard.projects_moderation,
+            path: route('projects_moderation.index', undefined, false),
             icon: ICONS.kanban,
             anyOf: ['PROJECTS_MODERATION_VIEW'],
             children: [
               {
                 title: __('navigation.management.projects_moderation'),
-                path: '/admin/projects/moderation',
+                path: route('projects_moderation.index', undefined, false),
                 permission: 'PROJECTS_MODERATION_VIEW',
               },
             ],

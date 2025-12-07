@@ -13,7 +13,6 @@ import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { route } from 'src/routes/route';
 import { useState } from 'react';
 
@@ -60,8 +59,8 @@ export default function ProjectShow({ project }: { project: Project }) {
           <CustomBreadcrumbs
             heading={project.name}
             links={[
-              { name: __('pages/projects.breadcrumbs.dashboard'), href: paths.dashboard.root },
-              { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index') },
+              { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+              { name: __('pages/projects.breadcrumbs.list'), href: route('projects.index', undefined, false) },
               { name: project.name },
             ]}
             sx={{ mb: { xs: 3, md: 5 } }}
@@ -76,7 +75,7 @@ export default function ProjectShow({ project }: { project: Project }) {
                   label={__(`pages/projects.status.${project.status}`)}
                 />
               </Stack>
-              <Button variant="outlined" href={`${window.location.origin}/pos/${project.ulid}`}>
+              <Button variant="outlined" href={route('pos.show', project.ulid)}>
                 {__('pages/projects.tabs.payment_page')}
               </Button>
             </Stack>

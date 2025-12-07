@@ -2,7 +2,6 @@ import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
 import { route } from 'src/routes/route';
 import { Can } from 'src/components/Can';
 import Tab from '@mui/material/Tab';
@@ -62,8 +61,8 @@ export default function Edit({ user, roles }: Props) {
             <CustomBreadcrumbs
               heading={__('pages/users.edit_user')}
               links={[
-                { name: __('pages/users.breadcrumbs.dashboard'), href: paths.dashboard.root },
-                { name: __('pages/users.breadcrumbs.users'), href: route('users.index') },
+                { name: __('pages/users.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+                { name: __('pages/users.breadcrumbs.users'), href: route('users.index', undefined, false) },
                 { name: __('pages/users.breadcrumbs.edit') },
               ]}
               sx={{ mb: { xs: 3, md: 5 } }}

@@ -14,7 +14,7 @@ import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { useLang } from 'src/hooks/useLang';
-import { paths } from 'src/routes/paths';
+import { route } from 'src/routes/route';
 
 // ----------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ export default function ModerationList({ projects }: { projects: Project[] }) {
           <CustomBreadcrumbs
             heading={__('navigation.management.projects_moderation')}
             links={[
-              { name: __('pages/projects.breadcrumbs.dashboard'), href: paths.dashboard.root },
+              { name: __('pages/projects.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
               { name: __('navigation.management.projects_moderation') },
             ]}
             sx={{ mb: { xs: 3, md: 5 } }}
@@ -65,7 +65,7 @@ export default function ModerationList({ projects }: { projects: Project[] }) {
                     <TableRow key={project.id} hover>
                       <TableCell>{project.id}</TableCell>
                       <TableCell>
-                        <Button href={`/projects/${project.ulid}`} color="inherit">
+                        <Button href={route('projects.show', project.ulid, false)} color="inherit">
                           {project.name}
                         </Button>
                       </TableCell>

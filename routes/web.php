@@ -14,11 +14,13 @@ Route::patch('/locale', [LocalisationsController::class, 'update'])->name('local
 Route::middleware('auth')->group(function () {
   Route::get('/', function () {
     return Inertia::render('index');
-  });
+  })->name('home');
 
   Route::get('/dashboard', function () {
     return Inertia::render('dashboard/home');
-  })->middleware('sync.lang:auth,navbar,navigation,pages/home');
+  })
+    ->name('dashboard')
+    ->middleware('sync.lang:auth,navbar,navigation,pages/home');
 
   Route::get('/users', [UserController::class, 'index'])
     ->middleware(['permission:USERS_VIEW', 'sync.lang:auth,navbar,navigation,validation,pages/users'])
