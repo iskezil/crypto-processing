@@ -20,7 +20,7 @@ Route::middleware('auth')->group(function () {
     return Inertia::render('dashboard/home');
   })
     ->name('dashboard')
-    ->middleware('sync.lang:auth,navbar,navigation,pages/home');
+    ->middleware('sync.lang:auth,navbar,navigation,pages/home,pages/projects');
 
   Route::get('/users', [UserController::class, 'index'])
     ->middleware(['permission:USERS_VIEW', 'sync.lang:auth,navbar,navigation,validation,pages/users'])
@@ -90,6 +90,10 @@ Route::middleware('auth')->group(function () {
     ->middleware(['permission:PROJECTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects.show');
 
+  Route::post('/projects/{project:ulid}/api-keys/regenerate', [ProjectUserController::class, 'regenerateApiKey'])
+    ->middleware(['permission:PROJECTS_EDIT|PROJECTS_MODERATION_EDIT|PROJECTS_REJECTED_EDIT|PROJECTS_ACTIVE_EDIT', 'sync.lang:auth,navbar,navigation,pages/projects'])
+    ->name('projects.api_keys.regenerate');
+
   Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_moderation.index');
@@ -102,7 +106,8 @@ Route::middleware('auth')->group(function () {
     ->middleware(['permission:PROJECTS_ACTIVE_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_active.index');
 
-  Route::get('/admin/projects/{project:ulid}', [ProjectAdminController::class, 'show'])
+  Route::get('/admin/projects/{status}/{project:ulid}', [ProjectAdminController::class, 'show'])
+    ->whereIn('status', ['moderation', 'rejected', 'active'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW|PROJECTS_REJECTED_VIEW|PROJECTS_ACTIVE_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
     ->name('projects_admin.show');
 

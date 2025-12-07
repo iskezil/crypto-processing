@@ -28,7 +28,10 @@ export function NavList({
 
   const pathname = usePathname();
 
-  const matchSelf = isActiveLink(pathname, data.path, data.deepMatch ?? !!data.children);
+  const pathsToMatch = [data.path, ...(data.activePaths ?? [])];
+  const matchSelf = pathsToMatch.some((path) =>
+    isActiveLink(pathname, path, data.deepMatch ?? !!data.children)
+  );
   const matchChild =
     data.children?.some((child) =>
       isActiveLink(pathname, child.path, child.deepMatch ?? !!child.children)

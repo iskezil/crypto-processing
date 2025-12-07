@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Project;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\ProjectApiKey;
 use App\Models\ProjectModerationLog;
 use App\Models\ProjectTokenNetwork;
 use App\Models\TokenNetwork;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,7 +22,7 @@ class ProjectUserController extends Controller
     public function __construct(){
       $this->middleware('permission:PROJECTS_VIEW')->only(['index', 'show']);
       $this->middleware('permission:PROJECTS_CREATE')->only(['create', 'store']);
-      $this->middleware('permission:PROJECTS_EDIT')->only('update');
+      $this->middleware('permission:PROJECTS_EDIT')->only(['update', 'regenerateApiKey']);
       $this->middleware('permission:PROJECTS_DELETE')->only('destroy');
     }
 
@@ -96,6 +98,8 @@ class ProjectUserController extends Controller
         'is_archived' => false,
       ]);
 
+      $this->issueProjectApiKey($project, 'moderation');
+
       $tokenNetworkIds = $validated['token_network_ids'];
       foreach ($tokenNetworkIds as $index => $tokenNetworkId) {
         ProjectTokenNetwork::create([
@@ -130,9 +134,14 @@ class ProjectUserController extends Controller
       );
 
       $project->load([
-        'moderationLogs.moderator:id,name,email',
+        'moderationLogs' => function ($query) {
+          $query->orderBy('created_at')->with('moderator:id,name,email');
+        },
         'tokenNetworks.token',
         'tokenNetworks.network',
+        'apiKeys' => function ($query) {
+          $query->orderByDesc('created_at');
+        },
       ]);
 
       $tokenNetworks = TokenNetwork::query()
@@ -150,10 +159,11 @@ class ProjectUserController extends Controller
       return Inertia::render('dashboard/projects/show', [
         'project' => $project,
         'tokenNetworks' => $tokenNetworks,
+        'viewMode' => 'user',
       ]);
     }
 
-    public function update(Request $request, Project $project): RedirectResponse
+  public function update(Request $request, Project $project): RedirectResponse
     {
       $user = $request->user();
 
@@ -227,6 +237,10 @@ class ProjectUserController extends Controller
         });
 
         if ($originalStatus === 'approved') {
+          $project->apiKeys()
+            ->where('status', '!=', 'revoked')
+            ->update(['status' => 'moderation']);
+
           ProjectModerationLog::create([
             'project_id' => $project->id,
             'moderation_type' => 'general',
@@ -244,5 +258,54 @@ class ProjectUserController extends Controller
 
     public function destroy(){
       return 'null';
+    }
+
+    public function regenerateApiKey(Request $request, Project $project): RedirectResponse
+    {
+      $user = $request->user();
+      $canModerate = $user?->can('PROJECTS_MODERATION_EDIT') || $user?->can('PROJECTS_REJECTED_EDIT') || $user?->can('PROJECTS_ACTIVE_EDIT');
+
+      abort_unless(
+        $user && ($project->user_id === $user->id || $canModerate),
+        403
+      );
+
+      DB::transaction(function () use ($project) {
+        $activeKey = $project->apiKeys()
+          ->where('status', '!=', 'revoked')
+          ->latest()
+          ->first();
+
+        if ($activeKey) {
+          $activeKey->update([
+            'status' => 'revoked',
+            'revoked_at' => now(),
+          ]);
+        }
+
+        $this->issueProjectApiKey($project, $this->resolveApiKeyStatus($project->status));
+      });
+
+      return redirect()
+        ->back()
+        ->with('flash.banner', __('pages/projects.notifications.api_keys_regenerated'));
+    }
+
+    private function issueProjectApiKey(Project $project, string $status): ProjectApiKey
+    {
+      return $project->apiKeys()->create([
+        'api_key' => Str::upper(Str::random(32)),
+        'secret' => Str::random(64),
+        'status' => $status,
+      ]);
+    }
+
+    private function resolveApiKeyStatus(string $projectStatus): string
+    {
+      return match ($projectStatus) {
+        'approved' => 'active',
+        'rejected' => 'rejected',
+        default => 'moderation',
+      };
     }
 }

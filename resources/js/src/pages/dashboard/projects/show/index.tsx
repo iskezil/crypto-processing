@@ -13,11 +13,20 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
 import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+
+import Timeline from '@mui/lab/Timeline';
+import TimelineItem from '@mui/lab/TimelineItem';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
+import TimelineDot from '@mui/lab/TimelineDot';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { CustomTabs } from 'src/components/custom-tabs';
+import { Iconify } from 'src/components/iconify';
 import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
 import { Form } from 'src/components/hook-form';
@@ -27,6 +36,9 @@ import { CurrenciesStep } from '../create/components/CurrenciesStep';
 import { DetailsStep } from '../create/components/DetailsStep';
 import { LinksStep } from '../create/components/LinksStep';
 import { projectSchema, type ProjectFormValues } from '../create/schema';
+import {varAlpha} from "minimal-shared/utils";
+import {palette} from "@/theme";
+import {alpha} from "@mui/material";
 
 // ----------------------------------------------------------------------
 
@@ -35,6 +47,15 @@ type ModerationLog = {
   status: string;
   comment: string | null;
   moderator?: { id: number; name: string; email: string } | null;
+  created_at: string;
+};
+
+type ProjectApiKey = {
+  id: number;
+  api_key: string;
+  secret: string;
+  status: 'moderation' | 'active' | 'rejected' | 'revoked';
+  revoked_at?: string | null;
   created_at: string;
 };
 
@@ -63,6 +84,8 @@ type Project = {
   logo?: string | null;
   moderation_logs?: ModerationLog[];
   token_networks?: TokenNetwork[];
+  api_keys?: ProjectApiKey[];
+  service_fee?: number | null;
 };
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
@@ -77,23 +100,63 @@ const platformLabels: Record<ProjectFormValues['platform'], string> = {
 export type ProjectShowProps = {
   project: Project;
   tokenNetworks: TokenNetwork[];
+  viewMode?: 'user' | 'admin';
   breadcrumbs?: BreadcrumbLink[];
 };
 
-export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: ProjectShowProps) {
+export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewMode = 'user' }: ProjectShowProps) {
   const { __ } = useLang();
   const { can } = useAuthz();
   const [currentTab, setCurrentTab] = useState('details');
   const [moderationComment, setModerationComment] = useState('');
   const [isPaymentLinkCopied, setIsPaymentLinkCopied] = useState(false);
+  const [isApiKeyCopied, setIsApiKeyCopied] = useState(false);
+  const [isSecretCopied, setIsSecretCopied] = useState(false);
 
-  const tabs = [
-    { value: 'details', label: __('pages/projects.steps.details') },
-    { value: 'links', label: __('pages/projects.steps.links') },
-    { value: 'currencies', label: __('pages/projects.steps.currencies') },
-    { value: 'integration', label: __('pages/projects.tabs.integration') },
-    { value: 'fees', label: __('pages/projects.tabs.fees') },
-  ];
+  const isAdminView = viewMode === 'admin';
+  const apiKeys = project.api_keys ?? [];
+  const activeApiKey = apiKeys.find((key) => key.status !== 'revoked') ?? apiKeys[0];
+  const revokedKeys = apiKeys.filter((key) => key.status === 'revoked');
+  const rejectionLog = [...(project.moderation_logs ?? [])]
+    .reverse()
+    .find((log) => log.status === 'rejected' && log.comment);
+  const integrationAvailable = project.status === 'approved';
+  const showModerationHistory = isAdminView;
+  const apiKeyStatusLabels: Record<ProjectApiKey['status'], string> = {
+    moderation: __('pages/projects.api_keys.status.moderation'),
+    active: __('pages/projects.api_keys.status.active'),
+    rejected: __('pages/projects.api_keys.status.rejected'),
+    revoked: __('pages/projects.api_keys.status.revoked'),
+  };
+
+  const apiKeyStatusColors: Record<ProjectApiKey['status'], 'warning' | 'success' | 'error' | 'info'> = {
+    moderation: 'warning',
+    active: 'success',
+    rejected: 'error',
+    revoked: 'info',
+  };
+
+  const moderationStatusColors: Record<string, 'warning' | 'success' | 'error'> = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'error',
+  };
+
+  const tabs = useMemo(() => {
+    const items = [
+      { value: 'details', label: __('pages/projects.steps.details') },
+      { value: 'links', label: __('pages/projects.steps.links') },
+      { value: 'currencies', label: __('pages/projects.steps.currencies') },
+      { value: 'integration', label: __('pages/projects.tabs.integration'), disabled: !integrationAvailable },
+      { value: 'fees', label: __('pages/projects.tabs.fees'), disabled: !integrationAvailable },
+    ];
+
+    if (showModerationHistory) {
+      items.push({ value: 'history', label: __('pages/projects.tabs.history') });
+    }
+
+    return items;
+  }, [__, integrationAvailable, showModerationHistory]);
 
   const Schema = useMemo(() => projectSchema(__), [__]);
 
@@ -134,14 +197,18 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
       { name: project.name },
     ];
 
-  const handleCopyPaymentLink = async () => {
-    setIsPaymentLinkCopied(false);
+  const copyValue = async (
+    value: string,
+    onCopied: (state: boolean) => void,
+    successMessage: string
+  ) => {
+    onCopied(false);
     if (navigator.clipboard?.writeText) {
       try {
-        await navigator.clipboard.writeText(paymentPageLink);
-        setIsPaymentLinkCopied(true);
-        toast.success(__('pages/projects.notifications.payment_link_copied'));
-        setTimeout(() => setIsPaymentLinkCopied(false), 1500);
+        await navigator.clipboard.writeText(value);
+        onCopied(true);
+        toast.success(successMessage);
+        setTimeout(() => onCopied(false), 1500);
         return;
       } catch (error) {
         // fallback method below
@@ -149,7 +216,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
     }
 
     const textarea = document.createElement('textarea');
-    textarea.value = paymentPageLink;
+    textarea.value = value;
     textarea.style.position = 'fixed';
     textarea.style.left = '-9999px';
     document.body.appendChild(textarea);
@@ -158,12 +225,37 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
 
     try {
       document.execCommand('copy');
-      setIsPaymentLinkCopied(true);
-      toast.success(__('pages/projects.notifications.payment_link_copied'));
-      setTimeout(() => setIsPaymentLinkCopied(false), 1500);
+      onCopied(true);
+      toast.success(successMessage);
+      setTimeout(() => onCopied(false), 1500);
     } finally {
       document.body.removeChild(textarea);
     }
+  };
+
+  const handleCopyPaymentLink = async () =>
+    copyValue(paymentPageLink, setIsPaymentLinkCopied, __('pages/projects.notifications.payment_link_copied'));
+
+  const handleCopyApiKey = async () => {
+    if (!activeApiKey) return;
+    copyValue(activeApiKey.api_key, setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
+  };
+
+  const handleCopyApiSecret = async () => {
+    if (!activeApiKey) return;
+    copyValue(activeApiKey.secret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+  };
+
+  const handleRegenerateApiKeys = () => {
+    router.post(
+      route('projects.api_keys.regenerate', project.ulid),
+      {},
+      {
+        preserveScroll: true,
+        onSuccess: () => toast.success(__('pages/projects.notifications.api_keys_regenerated')),
+        onError: () => toast.error(__('pages/projects.notifications.status_change_failed')),
+      }
+    );
   };
 
   const onSubmit = handleSubmit((data) => {
@@ -188,6 +280,9 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
   });
 
   const handleTabChange = async (_: unknown, value: string) => {
+    const nextTab = tabs.find((tab) => tab.value === value);
+    if (nextTab?.disabled) return;
+
     const tabFields: Record<string, Array<keyof ProjectFormValues>> = {
       details: ['name', 'activity_type', 'description'],
       links: ['platform', 'project_url', 'success_url', 'fail_url', 'notify_url', 'logo'],
@@ -225,7 +320,8 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
   };
 
   const canModerate =
-    can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT');
+    isAdminView &&
+    (can('PROJECTS_MODERATION_EDIT') || can('PROJECTS_REJECTED_EDIT') || can('PROJECTS_ACTIVE_EDIT'));
 
   return (
     <>
@@ -239,18 +335,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
           />
 
           <Card sx={{ p: 3, mb: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
-              <Stack spacing={1} alignItems={{ xs: 'center', sm: 'flex-start' }}>
-                <Typography variant="h5">{project.name}</Typography>
-                <Chip
-                  color={project.status === 'approved' ? 'success' : project.status === 'pending' ? 'warning' : 'error'}
-                  label={__(`pages/projects.status.${project.status}`)}
-                />
-              </Stack>
-              <Button variant="outlined" href={paymentPageLink}>
-                {__('pages/projects.tabs.payment_page')}
-              </Button>
-            </Stack>
             {canModerate && (
               <Stack spacing={2} sx={{ mt: 3 }}>
                 <TextField
@@ -303,39 +387,81 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
                       </Button>
                     </>
                   )}
+
+                  {project.status === 'approved' && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        onClick={() => handleModeration('to_pending')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.back_to_moderation')}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleModeration('reject')}
+                        sx={{ flexGrow: 1 }}
+                      >
+                        {__('pages/projects.actions.reject')}
+                      </Button>
+                    </>
+                  )}
                 </Stack>
               </Stack>
             )}
           </Card>
 
-          {project.status === 'pending' && (
+          {!isAdminView && project.status === 'pending' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               {__('pages/projects.alerts.pending')}
             </Alert>
           )}
 
-          {project.status === 'rejected' && latestModeration?.comment && (
+          {!isAdminView && project.status === 'rejected' && rejectionLog?.comment && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {__('pages/projects.alerts.rejected', { reason: latestModeration.comment })}
+              {__('pages/projects.alerts.rejected', { reason: rejectionLog.comment })}
             </Alert>
           )}
 
           <Card sx={{ mb: 2 }}>
             <CustomTabs
-              value={currentTab}
-              onChange={handleTabChange}
-              variant="scrollable"
-              allowScrollButtonsMobile
-              slotProps={{
-                list: { sx: { gap: 1, px: 2, pt: 2 } },
-                tab: { sx: { borderRadius: 1, minHeight: 44, fontWeight: 600 } },
-                indicatorContent: { sx: { boxShadow: 'none' } },
-              }}
+                value={currentTab}
+                onChange={handleTabChange}
+                variant="scrollable"
+                allowScrollButtonsMobile
+                slotProps={{
+                  tab: {
+                    sx: (theme) => ({
+                      // геометрия как у пунктов меню
+                      borderRadius: 1.75, // примерно как у левого меню
+                      minHeight: 44,
+                      px: 2.5,
+                      fontWeight: 600,
+                      fontSize: 14,
+                      textTransform: 'none',
+
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+
+                      color: theme.vars.palette.text.secondary,
+                      transition: theme.transitions.create(['background-color', 'color'], {
+                        duration: theme.transitions.duration.shorter,
+                      }),
+                    }),
+                  },
+                }}
             >
               {tabs.map((tab) => (
-                <Tab key={tab.value} value={tab.value} label={tab.label} />
+                  <Tab key={tab.value} value={tab.value} label={tab.label} disabled={tab.disabled} />
               ))}
             </CustomTabs>
+
+
+
+
           </Card>
           <Card>
             <Divider />
@@ -379,19 +505,172 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs }: Pro
                   )}
 
                   {currentTab === 'integration' && (
-                    <Stack spacing={2}>
+                    <Stack spacing={3}>
                       <Typography variant="body2" color="text.secondary">
                         {__('pages/projects.integration.shop_id')}: {project.ulid}
                       </Typography>
-                      <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
+
+                      {!integrationAvailable ? (
+                        <Alert severity="info">{__('pages/projects.integration.apikey_placeholder')}</Alert>
+                      ) : (
+                        <Stack spacing={2}>
+                          {activeApiKey ? (
+                            <>
+                              <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                spacing={1}
+                                alignItems={{ sm: 'center' }}
+                              >
+                                <Chip
+                                  color={apiKeyStatusColors[activeApiKey.status]}
+                                  label={apiKeyStatusLabels[activeApiKey.status]}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                  {__('pages/projects.integration.generated_at', { date: activeApiKey.created_at })}
+                                </Typography>
+                              </Stack>
+
+                              <TextField
+                                label={__('pages/projects.integration.api_key')}
+                                value={activeApiKey.api_key}
+                                InputProps={{
+                                  readOnly: true,
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <Button
+                                        size="small"
+                                        color={isApiKeyCopied ? 'success' : 'primary'}
+                                        startIcon={<Iconify icon="solar:copy-bold" width={18} />}
+                                        onClick={handleCopyApiKey}
+                                      >
+                                        {isApiKeyCopied
+                                          ? __('pages/projects.integration.copied')
+                                          : __('pages/projects.integration.copy')}
+                                      </Button>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+
+                              <TextField
+                                label={__('pages/projects.integration.api_secret')}
+                                value={activeApiKey.secret}
+                                InputProps={{
+                                  readOnly: true,
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <Button
+                                        size="small"
+                                        color={isSecretCopied ? 'success' : 'primary'}
+                                        startIcon={<Iconify icon="solar:copy-bold" width={18} />}
+                                        onClick={handleCopyApiSecret}
+                                      >
+                                        {isSecretCopied
+                                          ? __('pages/projects.integration.copied')
+                                          : __('pages/projects.integration.copy')}
+                                      </Button>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+
+                              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="flex-end">
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<Iconify icon="solar:refresh-bold" width={18} />}
+                                  onClick={handleRegenerateApiKeys}
+                                >
+                                  {__('pages/projects.actions.regenerate_keys')}
+                                </Button>
+                              </Stack>
+
+                              {revokedKeys.length > 0 && (
+                                <Stack spacing={1}>
+                                  <Typography variant="subtitle2">
+                                    {__('pages/projects.integration.revoked_keys')}
+                                  </Typography>
+                                  {revokedKeys.map((key) => (
+                                    <Alert key={key.id} severity="info">
+                                      {__('pages/projects.integration.revoked_key_item', {
+                                        date: key.revoked_at ?? key.created_at,
+                                      })}
+                                    </Alert>
+                                  ))}
+                                </Stack>
+                              )}
+                            </>
+                          ) : (
+                            <Alert severity="warning">{__('pages/projects.integration.api_key_missing')}</Alert>
+                          )}
+                        </Stack>
+                      )}
                     </Stack>
                   )}
 
                   {currentTab === 'fees' && (
-                    <Alert severity="info">{__('pages/projects.integration.fees_placeholder')}</Alert>
+                    <>
+                      {!integrationAvailable ? (
+                        <Alert severity="info">{__('pages/projects.integration.fees_placeholder')}</Alert>
+                      ) : (
+                        <Stack spacing={1}>
+                          <Typography variant="subtitle2">
+                            {__('pages/projects.integration.fees_title')}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {project.service_fee != null
+                              ? __('pages/projects.integration.fees_value', { value: project.service_fee })
+                              : __('pages/projects.integration.fees_not_set')}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </>
                   )}
 
-                  {currentTab !== 'integration' && currentTab !== 'fees' && (
+                  {currentTab === 'history' && showModerationHistory && (
+                    <Stack spacing={2}>
+                      {(project.moderation_logs ?? []).length === 0 && (
+                        <Alert severity="info">{__('pages/projects.integration.history_empty')}</Alert>
+                      )}
+
+                      {(project.moderation_logs ?? []).length > 0 && (
+                        <Timeline sx={{ p: 0 }}>
+                          {(project.moderation_logs ?? []).map((log, index) => {
+                            const color = moderationStatusColors[log.status] || 'warning';
+                            return (
+                              <TimelineItem key={log.id}>
+                                <TimelineSeparator>
+                                  <TimelineDot color={color} />
+                                  {index < (project.moderation_logs?.length ?? 0) - 1 && <TimelineConnector />}
+                                </TimelineSeparator>
+                                <TimelineContent>
+                                  <Stack spacing={0.5}>
+                                    <Typography variant="subtitle2">
+                                      {__(`pages/projects.status.${log.status}`)}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {log.created_at}
+                                    </Typography>
+                                    {log.moderator && (
+                                      <Typography variant="body2">
+                                        {__('pages/projects.integration.moderator', { name: log.moderator.name })}
+                                      </Typography>
+                                    )}
+                                    {log.comment && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        {log.comment}
+                                      </Typography>
+                                    )}
+                                  </Stack>
+                                </TimelineContent>
+                              </TimelineItem>
+                            );
+                          })}
+                        </Timeline>
+                      )}
+                    </Stack>
+                  )}
+
+                  {currentTab !== 'integration' && currentTab !== 'fees' && currentTab !== 'history' && (
                     <Stack direction="row" spacing={2} justifyContent="flex-end">
                       <Button type="submit" variant="contained" disabled={isSubmitting}>
                         {__('pages/projects.actions.save')}

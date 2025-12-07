@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -60,6 +61,8 @@ class ProjectAdminController extends Controller
         'comment' => ['nullable', 'string', 'max:1000'],
       ]);
 
+      $this->authorizeEditByStatus($project);
+
       DB::transaction(function () use ($project, $validated, $request) {
         $action = Arr::get($validated, 'action');
         $comment = Arr::get($validated, 'comment');
@@ -71,6 +74,12 @@ class ProjectAdminController extends Controller
 
         $project->update(['status' => $status]);
 
+        $project->apiKeys()
+          ->where('status', '!=', 'revoked')
+          ->update([
+            'status' => $this->resolveApiKeyStatus($status),
+          ]);
+
         ProjectModerationLog::create([
           'project_id' => $project->id,
           'moderation_type' => 'general',
@@ -80,16 +89,29 @@ class ProjectAdminController extends Controller
         ]);
       });
 
-      return redirect()->back();
+      return redirect()->route('projects_admin.show', [$this->resolveStatusSlug($project->status), $project->ulid]);
     }
 
-    public function show(Project $project): Response
+    public function show(string $status, Project $project): Response
     {
+      $expectedStatus = $this->resolveStatusSlug($project->status);
+
+      if ($status !== $expectedStatus) {
+        return redirect()->route('projects_admin.show', [$expectedStatus, $project->ulid]);
+      }
+
       $project->load([
-        'moderationLogs.moderator:id,name,email',
+        'moderationLogs' => function ($query) {
+          $query->orderBy('created_at')->with('moderator:id,name,email');
+        },
         'tokenNetworks.token',
         'tokenNetworks.network',
+        'apiKeys' => function ($query) {
+          $query->orderByDesc('created_at');
+        },
       ]);
+
+      $this->authorizeViewByStatus($project);
 
       $tokenNetworks = TokenNetwork::query()
         ->with(['token:id,name,code,icon_path', 'network:id,name,code,icon_path'])
@@ -106,6 +128,7 @@ class ProjectAdminController extends Controller
       return Inertia::render('dashboard/projects/moderation/show', [
         'project' => $project,
         'tokenNetworks' => $tokenNetworks,
+        'viewMode' => 'admin',
       ]);
     }
 
@@ -116,5 +139,45 @@ class ProjectAdminController extends Controller
         ->where('status', $status)
         ->latest()
         ->get(['id', 'ulid', 'name', 'status', 'platform', 'user_id', 'created_at']);
+    }
+
+    private function authorizeViewByStatus(Project $project): void
+    {
+      $permission = match ($project->status) {
+        'pending' => 'PROJECTS_MODERATION_VIEW',
+        'rejected' => 'PROJECTS_REJECTED_VIEW',
+        default => 'PROJECTS_ACTIVE_VIEW',
+      };
+
+      Gate::authorize($permission);
+    }
+
+    private function authorizeEditByStatus(Project $project): void
+    {
+      $permission = match ($project->status) {
+        'pending' => 'PROJECTS_MODERATION_EDIT',
+        'rejected' => 'PROJECTS_REJECTED_EDIT',
+        default => 'PROJECTS_ACTIVE_EDIT',
+      };
+
+      Gate::authorize($permission);
+    }
+
+    private function resolveApiKeyStatus(string $projectStatus): string
+    {
+      return match ($projectStatus) {
+        'approved' => 'active',
+        'rejected' => 'rejected',
+        default => 'moderation',
+      };
+    }
+
+    private function resolveStatusSlug(string $projectStatus): string
+    {
+      return match ($projectStatus) {
+        'approved' => 'active',
+        'rejected' => 'rejected',
+        default => 'moderation',
+      };
     }
 }

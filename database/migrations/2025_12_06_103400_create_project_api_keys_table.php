@@ -17,7 +17,7 @@ return new class extends Migration {
       $table->string('secret', 255)->comment('Секрет API-ключа (хранить в зашифрованном виде)');
       $table->json('ip_allow_list')->nullable()->comment('Список разрешённых IP (JSON/CSV), если используется ограничение по IP');
       $table->integer('rate_limit')->nullable()->comment('Лимит запросов в минуту для этого ключа (NULL = по умолчанию)');
-      $table->string('status', 50)->default('active')->comment('Статус API-ключа: active, revoked');
+      $table->string('status', 50)->default('moderation')->comment('Статус API-ключа: moderation, active, rejected, revoked');
       $table->timestamp('last_used_at')->nullable()->comment('Время последнего использования ключа');
       $table->timestamp('revoked_at')->nullable()->comment('Время отзыва ключа (если статус revoked)');
       $table->timestamps();

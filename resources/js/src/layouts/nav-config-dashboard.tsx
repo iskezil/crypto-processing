@@ -146,6 +146,7 @@ export function useNavData(): NavSectionProps['data'] {
                 title: __('navigation.management.projects_moderation'),
                 path: route('projects_moderation.index', undefined, false),
                 permission: 'PROJECTS_MODERATION_VIEW',
+                deepMatch: true,
                 info: (
                   <Label color="warning">
                     { moderationStats.pending ?? 0}
@@ -156,6 +157,7 @@ export function useNavData(): NavSectionProps['data'] {
                 title: __('navigation.management.projects_rejected'),
                 path: route('projects_rejected.index', undefined, false),
                 permission: 'PROJECTS_REJECTED_VIEW',
+                deepMatch: true,
                 info: (
                   <Label color="error">
                     { moderationStats.rejected ?? 0}
@@ -166,6 +168,7 @@ export function useNavData(): NavSectionProps['data'] {
                 title: __('navigation.management.projects_active'),
                 path: route('projects_active.index', undefined, false),
                 permission: 'PROJECTS_ACTIVE_VIEW',
+                deepMatch: true,
                 info: (
                   <Label color="success">
                     { moderationStats.approved ?? 0}
