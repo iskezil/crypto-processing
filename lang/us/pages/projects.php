@@ -93,6 +93,7 @@ return [
         'copy_failed' => 'Failed to copy value',
         'api_keys_regenerated' => 'API keys have been regenerated',
         'secret_created' => 'Secret key created',
+        'validation_failed' => 'Please fix the errors on the “{tab}” tab.',
     ],
     'platforms' => [
         'website' => 'Website',

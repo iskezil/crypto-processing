@@ -93,6 +93,7 @@ return [
         'copy_failed' => 'Не удалось скопировать значение',
         'api_keys_regenerated' => 'API ключи перевыпущены',
         'secret_created' => 'Секретный ключ создан',
+        'validation_failed' => 'Исправьте ошибки на вкладке «{tab}».',
     ],
     'platforms' => [
         'website' => 'Сайт',

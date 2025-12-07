@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 
@@ -289,10 +289,13 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   };
 
   const handleCopySecret = async () => {
-    console.log('generatedSecret', generatedSecret);
-    copyValue(generatedSecret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
-  }
+    if (!generatedSecret) {
+      toast.error(__('pages/projects.notifications.copy_failed'));
+      return;
+    }
 
+    copyValue(generatedSecret, setIsSecretCopied, __('pages/projects.notifications.api_secret_copied'));
+  };
 
   const handleGenerateSecret = async () => {
     if (!integrationAvailable) return;
@@ -325,6 +328,41 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   const handleCloseSecretModal = () => {
     setIsSecretModalOpen(false);
     setGeneratedSecret('');
+  };
+
+  const fieldTabMap: Partial<Record<keyof ProjectFormValues, ProjectTab['value']>> = {
+    name: 'details',
+    activity_type: 'details',
+    description: 'details',
+    platform: 'links',
+    project_url: 'links',
+    logo: 'links',
+    success_url: integrationAvailable ? 'integration' : 'links',
+    fail_url: integrationAvailable ? 'integration' : 'links',
+    notify_url: integrationAvailable ? 'integration' : 'links',
+    token_network_ids: 'currencies',
+    accept: 'currencies',
+    side_commission: 'fees',
+    side_commission_cc: 'fees',
+    auto_confirm_partial_by_amount: 'fees',
+    auto_confirm_partial_by_percent: 'fees',
+    service_fee: 'fees',
+  };
+
+  const handleValidationErrors = (errors: FieldErrors<ProjectFormValues>) => {
+    const [firstErrorField] = Object.keys(errors) as (keyof ProjectFormValues | undefined)[];
+    const normalizedField = firstErrorField?.toString().split('.')[0] as keyof ProjectFormValues | undefined;
+
+    if (!normalizedField) return;
+
+    const targetTab = fieldTabMap[normalizedField];
+    if (!targetTab) return;
+
+    const tabInfo = tabs.find((tab) => tab.value === targetTab);
+    if (!tabInfo) return;
+
+    setCurrentTab(tabInfo.value);
+    toast.error(__('pages/projects.notifications.validation_failed', { tab: tabInfo.label }));
   };
 
   const onSubmit = handleSubmit((data) => {
@@ -382,12 +420,13 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
         toast.success(__('pages/projects.notifications.saved'));
       },
       onError: (errors) => {
+        handleValidationErrors(errors as FieldErrors<ProjectFormValues>);
         Object.entries(errors).forEach(([field, message]) => {
           setError(field as keyof ProjectFormValues, { type: 'server', message: message as string });
         });
       },
     });
-  });
+  }, handleValidationErrors);
 
   const handleTabChange = async (_: unknown, value: string) => {
     const nextTab = tabs.find((tab) => tab.value === value);
