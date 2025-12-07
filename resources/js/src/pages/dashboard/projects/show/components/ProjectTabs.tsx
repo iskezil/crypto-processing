@@ -4,7 +4,7 @@ import type { Theme } from '@mui/material/styles';
 
 import { CustomTabs } from 'src/components/custom-tabs';
 
-import { varAlpha } from 'minimal-shared/utils';
+import { projectAccent } from '../../theme';
 
 export type ProjectTab = { value: string; label: string; disabled?: boolean };
 
@@ -53,11 +53,7 @@ const styles = {
       backgroundColor: theme.vars.palette.action.hover,
     },
     [`&.${tabClasses.selected}`]: {
-      color: theme.vars.palette.primary.main,
-      backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
-      '&:hover': {
-        backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.16),
-      },
+      ...projectAccent(theme),
     },
   }),
 };

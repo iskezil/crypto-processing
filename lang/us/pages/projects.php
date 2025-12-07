@@ -73,6 +73,7 @@ return [
         'telegram_handle' => 'Enter the Telegram link in the format @username.',
         'auto_confirm_exclusive' => 'Fill in only one field: either in % or in $.',
         'auto_confirm_number' => 'Enter a numeric value without extra symbols.',
+        'platform_required' => 'Select the project platform.',
     ],
     'notifications' => [
         'sent_to_moderation' => 'Project has been sent for moderation',
@@ -97,7 +98,37 @@ return [
         'currencies' => 'Project currencies',
         'fees' => 'Fees',
         'payment_page' => 'Permanent payment page',
-        'history' => 'Moderation history',
+        'history' => 'History',
+    ],
+    'details_section' => [
+        'payment_link_title' => 'Permanent payment page link:',
+        'payment_link_description' => 'Use this link to receive payments without integration.',
+        'payment_link_placeholder' => 'Your link',
+        'name_title' => 'Project name',
+        'name_description' =>
+            'The project name will appear on the payment page, in receipts for your customers, and in your dashboard.',
+        'activity_title' => 'Business activity',
+        'activity_description' =>
+            'The most accurate description of your activity (online store / online school / service or platform / digital goods / Telegram bot, etc.).',
+        'description_title' => 'Project description',
+        'description_description' =>
+            'Briefly describe your project: specify the product or service, target audience, and sales format.',
+    ],
+    'links_section' => [
+        'platform_title' => 'Project platform',
+        'platform_description' => 'Choose the project platform.',
+        'platform_placeholder' => 'Select a platform',
+        'project_url_description' =>
+            'Link to the site where you want to accept payments. For proper integration, please provide accurate data.',
+        'success_title' => 'Success URL:',
+        'success_description' => 'Link to the page a user will see after successful payment.',
+        'fail_title' => 'Fail URL:',
+        'fail_description' => 'Link to the page a user will see if the payment fails.',
+        'notify_title' => 'Notification URL',
+        'notify_description' =>
+            'Link in your system where event notifications will be sent. Notifications are used when working with the API — they allow you to automatically track and pass operation statuses to your site or service. Leave this empty if you use the HTML widget.',
+        'logo_title' => 'Payment page logo',
+        'logo_description' => 'Allowed formats: png, jpeg. Maximum file size: 2MB. Aspect ratio: 3x1',
     ],
     'integration' => [
         'shop_id' => 'Shop ID',

@@ -81,6 +81,10 @@ class ProjectUserController extends Controller
         'fail_url' => ['nullable', 'string', 'max:255'],
         'notify_url' => ['nullable', 'string', 'max:255'],
         'logo' => ['nullable', 'string', 'max:255'],
+        'side_commission' => ['required', 'in:client,merchant'],
+        'side_commission_cc' => ['required', 'in:client,merchant'],
+        'auto_confirm_partial_by_amount' => ['nullable', 'numeric'],
+        'auto_confirm_partial_by_percent' => ['nullable', 'numeric'],
         'token_network_ids' => ['required', 'array', 'min:1'],
         'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
       ]);
@@ -96,6 +100,14 @@ class ProjectUserController extends Controller
         'fail_url' => Arr::get($validated, 'fail_url'),
         'notify_url' => Arr::get($validated, 'notify_url'),
         'logo' => Arr::get($validated, 'logo'),
+        'side_commission' => Arr::get($validated, 'side_commission'),
+        'side_commission_cc' => Arr::get($validated, 'side_commission_cc'),
+        'auto_confirm_partial_by_amount' => filled($validated['auto_confirm_partial_by_amount'] ?? null)
+          ? (float) $validated['auto_confirm_partial_by_amount']
+          : null,
+        'auto_confirm_partial_by_percent' => filled($validated['auto_confirm_partial_by_percent'] ?? null)
+          ? (float) $validated['auto_confirm_partial_by_percent']
+          : null,
         'status' => 'pending',
         'is_archived' => false,
       ]);
@@ -184,6 +196,10 @@ class ProjectUserController extends Controller
         'fail_url' => ['nullable', 'string', 'max:255'],
         'notify_url' => ['nullable', 'string', 'max:255'],
         'logo' => ['nullable', 'string', 'max:255'],
+        'side_commission' => ['required', 'in:client,merchant'],
+        'side_commission_cc' => ['required', 'in:client,merchant'],
+        'auto_confirm_partial_by_amount' => ['nullable', 'numeric'],
+        'auto_confirm_partial_by_percent' => ['nullable', 'numeric'],
         'token_network_ids' => ['required', 'array', 'min:1'],
         'token_network_ids.*' => ['integer', 'exists:token_networks,id'],
       ]);
@@ -201,6 +217,14 @@ class ProjectUserController extends Controller
           'fail_url' => Arr::get($validated, 'fail_url'),
           'notify_url' => Arr::get($validated, 'notify_url'),
           'logo' => Arr::get($validated, 'logo'),
+          'side_commission' => Arr::get($validated, 'side_commission'),
+          'side_commission_cc' => Arr::get($validated, 'side_commission_cc'),
+          'auto_confirm_partial_by_amount' => filled($validated['auto_confirm_partial_by_amount'] ?? null)
+            ? (float) $validated['auto_confirm_partial_by_amount']
+            : null,
+          'auto_confirm_partial_by_percent' => filled($validated['auto_confirm_partial_by_percent'] ?? null)
+            ? (float) $validated['auto_confirm_partial_by_percent']
+            : null,
           'status' => $originalStatus === 'approved' ? 'pending' : $originalStatus,
         ]);
 

@@ -16,6 +16,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog/confirm-dialog';
 
 import type { ProjectApiKey } from '../../types';
 import { FormRow } from '../../components/form';
+import Divider from "@mui/material/Divider";
 
 type IntegrationSectionProps = {
   __: (key: string, options?: Record<string, unknown>) => string;
@@ -55,23 +56,16 @@ export function IntegrationSection({
   return (
     <Stack spacing={3}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ md: 'flex-start' }}>
-        <Stack spacing={1} flex={{ md: '1 1 40%' }}>
+        <Stack spacing={1} flex={{ md: '1 1 50%' }}>
           <Typography variant="h6">{__('pages/projects.integration.api_keys_title')}</Typography>
           <Typography variant="body2" color="text.secondary">
             {__('pages/projects.integration.api_keys_hint')}
           </Typography>
         </Stack>
 
-        <Stack spacing={2} flex={{ md: '1 1 60%' }}>
+        <Stack spacing={2} flex={{ md: '1 1 50%' }}>
           {activeApiKey ? (
             <>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                <Chip color={apiKeyStatusColors[activeApiKey.status]} label={apiKeyStatusLabels[activeApiKey.status]} />
-                <Typography variant="caption" color="text.secondary">
-                  {__('pages/projects.integration.generated_at', { date: activeApiKey.created_at })}
-                </Typography>
-              </Stack>
-
               <TextField
                 label={__('pages/projects.integration.api_key')}
                 value={activeApiKey.plain_text_token || ''}
@@ -147,27 +141,25 @@ export function IntegrationSection({
           )}
         </Stack>
       </Stack>
-
+      <Divider />
       <Stack spacing={2}>
-        <Typography variant="h6">{__('pages/projects.integration.project_data_title')}</Typography>
-
         <FormRow
-          title="Успешный URL:"
-          description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
+          title={__('pages/projects.links_section.success_title')}
+          description={__('pages/projects.links_section.success_description')}
         >
           <Field.Text name="success_url" placeholder="https://" />
         </FormRow>
 
         <FormRow
-          title="Неудачный URL:"
-          description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
+          title={__('pages/projects.links_section.fail_title')}
+          description={__('pages/projects.links_section.fail_description')}
         >
           <Field.Text name="fail_url" placeholder="https://" />
         </FormRow>
 
         <FormRow
-          title="URL для уведомлений"
-          description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
+          title={__('pages/projects.links_section.notify_title')}
+          description={__('pages/projects.links_section.notify_description')}
         >
           <Field.Text name="notify_url" placeholder="https://" />
         </FormRow>

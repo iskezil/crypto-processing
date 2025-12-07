@@ -33,14 +33,16 @@ import { projectSchema, type ProjectFormValues } from '../create/schema';
 import { type BreadcrumbLink, type Project, type ProjectApiKey, type TokenNetwork } from '../types';
 import { IntegrationSection } from './components/IntegrationSection';
 import { ProjectTabs, type ProjectTab } from './components/ProjectTabs';
-import { HistorySection } from './components/HistorySection';
+import { HistorySection, RevokedKeysAccordion } from './components/HistorySection';
 import { FeesSection } from './components/FeesSection';
 import { ModerationActions } from './components/ModerationActions';
 import { buildCallbackUrls, isValidHttpUrl, normalizeUrl } from '../utils';
 
 const metadata = { title: `Project | Dashboard - ${CONFIG.appName}` };
 
-const platformLabels: Record<ProjectFormValues['platform'], string> = {
+type PlatformValue = 'website' | 'telegram_bot' | 'vk_bot' | 'other';
+
+const platformLabels: Record<PlatformValue, string> = {
   website: 'pages/projects.platforms.website',
   telegram_bot: 'pages/projects.platforms.telegram_bot',
   vk_bot: 'pages/projects.platforms.vk_bot',
@@ -124,7 +126,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       name: project.name || '',
       activity_type: project.activity_type || '',
       description: project.description || '',
-      platform: project.platform || 'website',
+      platform: (project.platform as PlatformValue | '') || '',
       project_url: project.project_url || '',
       success_url: project.success_url || '',
       fail_url: project.fail_url || '',
@@ -132,8 +134,8 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       logo: project.logo || null,
       token_network_ids: (project.token_networks || []).map((item) => item.id),
       accept: true,
-      side_commission: project.side_commission || 'client',
-      side_commission_cc: project.side_commission_cc || 'client',
+      side_commission: project.side_commission ?? '',
+      side_commission_cc: project.side_commission_cc ?? '',
       auto_confirm_partial_by_amount:
         project.auto_confirm_partial_by_amount != null
           ? String(project.auto_confirm_partial_by_amount)
@@ -149,21 +151,22 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     handleSubmit,
     watch,
     setError,
-    trigger,
     setValue,
     getValues,
     formState: { isSubmitting },
   } = methods;
 
-  const platform = watch('platform');
-  const projectUrlLabel = __(platformLabels[platform]);
+  const platformValue = watch('platform') as PlatformValue | '';
+  const platform = platformValue || 'website';
+  const projectUrlLabelKey = platformValue ? platformLabels[platform] : 'pages/projects.form.project_url';
+  const projectUrlLabel = __(projectUrlLabelKey);
   const projectUrl = watch('project_url');
-  const projectUrlPlaceholder = platform === 'telegram_bot' ? '@username' : 'https://';
+  const projectUrlPlaceholder = platformValue === 'telegram_bot' ? '@username' : 'https://';
   const paymentPageLink = route('pos.show', project.ulid, true);
   const autoFillBaseRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (platform !== 'website') {
+    if (platformValue !== 'website') {
       autoFillBaseRef.current = null;
       return;
     }
@@ -192,7 +195,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     }
 
     autoFillBaseRef.current = normalizedUrl;
-  }, [getValues, platform, projectUrl, setValue]);
+  }, [getValues, platformValue, projectUrl, setValue]);
 
   const breadcrumbLinks: BreadcrumbLink[] =
     breadcrumbs ?? [
@@ -314,27 +317,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   const handleTabChange = async (_: unknown, value: string) => {
     const nextTab = tabs.find((tab) => tab.value === value);
     if (nextTab?.disabled) return;
-
-    const tabFields: Record<string, Array<keyof ProjectFormValues>> = {
-      details: ['name', 'activity_type', 'description'],
-      links: ['platform', 'project_url', 'logo'],
-      currencies: ['token_network_ids', 'accept'],
-      integration: ['success_url', 'fail_url', 'notify_url'],
-      fees: [
-        'side_commission',
-        'side_commission_cc',
-        'auto_confirm_partial_by_amount',
-        'auto_confirm_partial_by_percent',
-      ],
-    };
-
-    const fields = tabFields[currentTab];
-    if (fields) {
-      const valid = await trigger(fields as unknown as string[]);
-      if (!valid) {
-        return;
-      }
-    }
 
     setCurrentTab(value);
   };
@@ -464,7 +446,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                     <HistorySection
                       __={__}
                       moderationLogs={project.moderation_logs ?? []}
-                      revokedKeys={revokedKeys}
                       statusColors={moderationStatusColors}
                     />
                   )}
@@ -480,6 +461,12 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
               </Form>
             </Box>
           </Card>
+
+          {currentTab === 'history' && showModerationHistory && revokedKeys.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <RevokedKeysAccordion __={__} revokedKeys={revokedKeys} />
+            </Box>
+          )}
 
           <Dialog open={isSecretModalOpen} onClose={handleCloseSecretModal} maxWidth="sm" fullWidth>
             <DialogTitle>

@@ -30,7 +30,9 @@ import { buildCallbackUrls, isValidHttpUrl, normalizeUrl } from '../utils';
 
 const metadata = { title: `Create project | Dashboard - ${CONFIG.appName}` };
 
-const platformLabels: Record<ProjectFormValues['platform'], string> = {
+type PlatformValue = 'website' | 'telegram_bot' | 'vk_bot' | 'other';
+
+const platformLabels: Record<PlatformValue, string> = {
   website: 'pages/projects.form.project_url_website',
   telegram_bot: 'pages/projects.form.project_url_telegram',
   vk_bot: 'pages/projects.form.project_url_vk',
@@ -51,7 +53,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
       name: '',
       activity_type: '',
       description: '',
-      platform: 'website',
+      platform: '' as ProjectFormValues['platform'],
       project_url: '',
       success_url: '',
       fail_url: '',
@@ -76,14 +78,16 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
     formState: { isSubmitting },
   } = methods;
 
-  const platform = watch('platform');
+  const platformValue = watch('platform') as PlatformValue | '';
+  const platform = platformValue || 'website';
   const projectUrl = watch('project_url');
-  const projectUrlLabel = __(platformLabels[platform]);
-  const projectUrlPlaceholder = platform === 'telegram_bot' ? '@username' : 'https://';
+  const projectUrlLabelKey = platformValue ? platformLabels[platform] : 'pages/projects.form.project_url';
+  const projectUrlLabel = __(projectUrlLabelKey);
+  const projectUrlPlaceholder = platformValue === 'telegram_bot' ? '@username' : 'https://';
   const autoFillBaseRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (platform !== 'website') {
+    if (platformValue !== 'website') {
       autoFillBaseRef.current = null;
       return;
     }
@@ -112,7 +116,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
     }
 
     autoFillBaseRef.current = normalizedUrl;
-  }, [getValues, platform, projectUrl, setValue]);
+  }, [getValues, platformValue, projectUrl, setValue]);
 
   const steps = useMemo(
     () => [

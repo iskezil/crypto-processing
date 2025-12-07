@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 
 import { Field } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
+import { useLang } from 'src/hooks/useLang';
 
 import { FormRow } from './FormRow';
 
@@ -26,12 +27,32 @@ export function LinksStep({
   logoTitle,
   showCallbacks = true,
 }: LinksStepProps) {
+  const { __ } = useLang();
+  const platformPlaceholder = __('pages/projects.links_section.platform_placeholder');
+
   return (
     <Stack spacing={3}>
       <Typography variant="h6">{title}</Typography>
 
-      <FormRow title="Платформа проекта" description="Выбирите платформу проекта.">
-        <Field.Select name="platform" placeholder="Выбирите платформу">
+      <FormRow
+        title={__('pages/projects.links_section.platform_title')}
+        description={__('pages/projects.links_section.platform_description')}
+      >
+        <Field.Select
+          name="platform"
+          label={platformPlaceholder}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (selected) => {
+              if (!selected) {
+                return <Typography color="text.disabled">{platformPlaceholder}</Typography>;
+              }
+
+              return platformLabels[selected as keyof typeof platformLabels] ?? selected;
+            },
+          }}
+        >
+          <MenuItem value="">{platformPlaceholder}</MenuItem>
           <MenuItem value="website">{platformLabels.website}</MenuItem>
           <MenuItem value="telegram_bot">{platformLabels.telegram_bot}</MenuItem>
           <MenuItem value="vk_bot">{platformLabels.vk_bot}</MenuItem>
@@ -41,7 +62,7 @@ export function LinksStep({
 
       <FormRow
         title={projectUrlLabel}
-        description="Ссылка на сайт, на котором вы хотите принимать платежи. Для корректности интеграции, пожалуйста, указывайте верные данные."
+        description={__('pages/projects.links_section.project_url_description')}
       >
         <Field.Text name="project_url" placeholder={projectUrlPlaceholder || 'https://'} />
       </FormRow>
@@ -49,22 +70,22 @@ export function LinksStep({
       {showCallbacks && (
         <>
           <FormRow
-            title="Успешный URL:"
-            description="Cсылка на страницу, на которую пользователь будет попадать после успешной оплаты."
+            title={__('pages/projects.links_section.success_title')}
+            description={__('pages/projects.links_section.success_description')}
           >
             <Field.Text name="success_url" placeholder="https://" />
           </FormRow>
 
           <FormRow
-            title="Неудачный URL:"
-            description="Cсылка на страницу, на которую пользователь будет попадать после в случае неуспешной оплаты."
+            title={__('pages/projects.links_section.fail_title')}
+            description={__('pages/projects.links_section.fail_description')}
           >
             <Field.Text name="fail_url" placeholder="https://" />
           </FormRow>
 
           <FormRow
-            title="URL для уведомлений"
-            description="Cсылка на страницу в вашей системе, на который будут приходить уведомления о событиях. Уведомления используются при взаимодействии по API — они позволяют автоматически отслеживать и передавать вашему сайту (или сервису) статусы операций. Если вы хотите принимать платежи с помощью HTML-виджета, данное поле заполнять не нужно."
+            title={__('pages/projects.links_section.notify_title')}
+            description={__('pages/projects.links_section.notify_description')}
           >
             <Field.Text name="notify_url" placeholder="https://" />
           </FormRow>
@@ -72,8 +93,8 @@ export function LinksStep({
       )}
 
       <FormRow
-        title="Логотип на платежной странице"
-        description="Допустимые форматы: png, jpeg. Максимальный вес файла: 2МБ. Соотношение сторон: 3x1"
+        title={__('pages/projects.links_section.logo_title')}
+        description={__('pages/projects.links_section.logo_description')}
       >
         <Field.Upload
           name="logo"

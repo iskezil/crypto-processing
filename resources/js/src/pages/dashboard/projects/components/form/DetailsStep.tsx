@@ -1,11 +1,11 @@
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 
 import { Field } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
+import { useLang } from 'src/hooks/useLang';
 
 import { FormRow } from './FormRow';
 
@@ -26,45 +26,52 @@ export function DetailsStep({
   onCopyPaymentLink,
   paymentLinkCopied,
 }: DetailsStepProps) {
+  const { __ } = useLang();
+
   return (
     <Stack spacing={3}>
       <Typography variant="h6">{title}</Typography>
 
       {paymentLink && (
         <FormRow
-          title="Cсылка на постоянную страницу оплаты:"
-          description="Используйте ссылку для приема платежей без интеграции."
+          title={__('pages/projects.details_section.payment_link_title')}
+          description={__('pages/projects.details_section.payment_link_description')}
         >
-            <Field.Text name="name" value={paymentLink} placeholder={'Ваша ссылка'} InputProps={{
-                readOnly: true,
-                endAdornment: (
-                    <InputAdornment position="end">
-                        <IconButton color={paymentLinkCopied ? 'success' : 'default'} onClick={() => onCopyPaymentLink?.()}>
-                            <Iconify icon="solar:copy-bold" />
-                        </IconButton>
-                    </InputAdornment>
-                ),
-            }}/>
+          <Field.Text
+            name="name"
+            value={paymentLink}
+            placeholder={__('pages/projects.details_section.payment_link_placeholder')}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton color={paymentLinkCopied ? 'success' : 'default'} onClick={() => onCopyPaymentLink?.()}>
+                    <Iconify icon="solar:copy-bold" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
         </FormRow>
       )}
 
       <FormRow
-        title="Название проекта"
-        description="Название проекта будет указываться на странице оплаты, в чеках об оплате у ваших покупателей, а также в вашем личном кабинете."
+        title={__('pages/projects.details_section.name_title')}
+        description={__('pages/projects.details_section.name_description')}
       >
         <Field.Text name="name" placeholder={namePlaceholder} autoFocus />
       </FormRow>
 
       <FormRow
-        title="Вид деятельности"
-        description="Наиболее подходящее обозначение вашей деятельности (интернет-магазин / онлайн-школа / сервис или платформа / цифровые товары / Telegram-бот и прочее)."
+        title={__('pages/projects.details_section.activity_title')}
+        description={__('pages/projects.details_section.activity_description')}
       >
         <Field.Text name="activity_type" placeholder={activityPlaceholder} />
       </FormRow>
 
       <FormRow
-        title="Описание проекта"
-        description="Расскажите кратко и понятно о вашем проекте: укажите продукт или услугу, целевую аудиторию и формат продажи."
+        title={__('pages/projects.details_section.description_title')}
+        description={__('pages/projects.details_section.description_description')}
       >
         <Field.Text name="description" multiline minRows={4} />
       </FormRow>

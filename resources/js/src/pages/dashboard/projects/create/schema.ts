@@ -24,7 +24,12 @@ export const projectSchema = (translate: TranslateFn) =>
     description: z
       .string({ required_error: requiredMessage(translate, translate('validation.attributes.description')) })
       .min(1, requiredMessage(translate, translate('validation.attributes.description'))),
-    platform: z.enum(['website', 'telegram_bot', 'vk_bot', 'other']),
+    platform: z
+      .enum(['website', 'telegram_bot', 'vk_bot', 'other'])
+      .or(z.literal(''))
+      .refine((value) => value !== '', {
+        message: translate('pages/projects.validation.platform_required'),
+      }),
     project_url: z
       .string({ required_error: requiredMessage(translate, translate('pages/projects.form.project_url')) })
       .min(1, requiredMessage(translate, translate('pages/projects.form.project_url'))),
