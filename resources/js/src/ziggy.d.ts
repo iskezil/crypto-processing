@@ -125,6 +125,13 @@ declare module 'ziggy-js' {
     ];
     "payments.index": [];
     "payments.export": [];
+    "payments.cancel": [
+      {
+        "name": "invoice";
+        "required": true;
+        "binding": "id";
+      }
+    ];
     "payments.admin": [];
     "payments.admin.export": [];
     "register": [];

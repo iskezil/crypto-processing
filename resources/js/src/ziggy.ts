@@ -130,6 +130,16 @@ export const Ziggy: Config = {
       parameters: ['project'],
       bindings: { project: 'ulid' },
     },
+    'payments.index': { uri: 'payments', methods: ['GET', 'HEAD'] },
+    'payments.export': { uri: 'payments/export', methods: ['GET', 'HEAD'] },
+    'payments.cancel': {
+      uri: 'payments/{invoice}/cancel',
+      methods: ['POST'],
+      parameters: ['invoice'],
+      bindings: { invoice: 'id' },
+    },
+    'payments.admin': { uri: 'admin/payments', methods: ['GET', 'HEAD'] },
+    'payments.admin.export': { uri: 'admin/payments/export', methods: ['GET', 'HEAD'] },
 
     register: { uri: 'register', methods: ['GET', 'HEAD'] },
     login: { uri: 'login', methods: ['GET', 'HEAD'] },

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Token;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +42,24 @@ class InvoiceController extends Controller
     public function adminExport(Request $request): StreamedResponse
     {
         return $this->exportInvoices($request, true);
+    }
+
+    public function cancel(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user?->can('PAYMENTS_ADMIN_VIEW') && $invoice->project?->user_id !== $user?->id) {
+            abort(403);
+        }
+
+        if ($invoice->status !== 'created') {
+            return back()->with('error', __('pages/payments.errors.cannot_cancel'));
+        }
+
+        $invoice->status = 'canceled';
+        $invoice->save();
+
+        return back()->with('success', __('pages/payments.notifications.canceled'));
     }
 
     private function renderInvoices(Request $request, bool $isAdmin): Response
@@ -144,6 +163,7 @@ class InvoiceController extends Controller
                 'credited_amount' => $invoice->credited_amount,
                 'credited_amount_usd' => $invoice->credited_amount_usd,
                 'tx_ids' => $this->splitTxIds($invoice->tx_ids),
+                'external_order_id' => $invoice->external_order_id,
                 'project' => $project?->only(['id', 'name']),
                 'currency' => [
                     'token' => $token?->name,
@@ -153,6 +173,7 @@ class InvoiceController extends Controller
                     'networkIcon' => $network?->icon_url,
                 ],
                 'created_at' => optional($invoice->created_at)?->toDateTimeString(),
+                'updated_at' => optional($invoice->updated_at)?->toDateTimeString(),
             ];
         });
 

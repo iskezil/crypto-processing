@@ -105,6 +105,9 @@ Route::middleware('auth')->group(function () {
   Route::get('/payments/export', [InvoiceController::class, 'export'])
     ->middleware('permission:PAYMENTS_VIEW')
     ->name('payments.export');
+  Route::post('/payments/{invoice}/cancel', [InvoiceController::class, 'cancel'])
+    ->middleware(['permission:PAYMENTS_VIEW|PAYMENTS_ADMIN_VIEW'])
+    ->name('payments.cancel');
 
   Route::get('/admin/payments', [InvoiceController::class, 'adminIndex'])
     ->middleware(['permission:PAYMENTS_ADMIN_VIEW', 'sync.lang:auth,navbar,navigation,pages/payments'])
