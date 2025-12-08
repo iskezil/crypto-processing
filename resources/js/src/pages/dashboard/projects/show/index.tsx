@@ -235,7 +235,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
         { name: project.name },
       ];
 
-  // === copyValue ДЛЯ ОБЫЧНЫХ КНОПОК КОПИРОВАНИЯ (API-KEY, SHOP ID, LINK) ===
   const copyValue = async (
       value: string,
       onCopied: (state: boolean) => void,
@@ -293,7 +292,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
     copyValue(activeApiKey.plain_text_token || '', setIsApiKeyCopied, __('pages/projects.notifications.api_key_copied'));
   };
 
-  // 🔴 НОВЫЙ handleCopySecret — работаем с реальным инпутом
   const handleCopySecret = async () => {
     console.log('[handleCopySecret] clicked, generatedSecret =', generatedSecret);
 
@@ -315,7 +313,6 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
       }
     }
 
-    // 2) Фоллбек — выделяем текст в самом поле и копируем
     if (secretInputRef.current) {
       secretInputRef.current.focus();
       secretInputRef.current.select();
