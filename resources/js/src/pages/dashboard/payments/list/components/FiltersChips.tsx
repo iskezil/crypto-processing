@@ -1,10 +1,11 @@
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
+import type { SxProps, Theme } from '@mui/material/styles';
+
+import { projectAccent } from 'src/theme/projectAccent';
 import { useLang } from 'src/hooks/useLang';
 
 import type { FilterState, Option, StatusOption } from '../../types';
-
-// ----------------------------------------------------------------------
 
 type Props = {
   filters: FilterState;
@@ -21,6 +22,14 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
   const getCurrencyLabel = (code: string) => currencies.find((currency) => currency.code === code)?.code ?? code;
   const getStatusLabel = (value: string) => statuses.find((status) => status.value === value)?.label ?? value;
 
+  const chipSx: SxProps<Theme> = (theme) => ({
+    borderRadius: 1,
+    ...projectAccent(theme),
+    '& .MuiChip-deleteIcon': {
+      color: projectAccent(theme).color,
+    },
+  });
+
   const hasFilters =
     filters.search ||
     filters.project_id.length > 0 ||
@@ -34,11 +43,14 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
   }
 
   return (
-    <Stack spacing={1} direction="row" alignItems="center" flexWrap="wrap" useFlexGap>
+    <Stack spacing={1} direction="row" alignItems="center" flexWrap="wrap" useFlexGap sx={{ paddingX: 2, pb: 2 }}>
       {filters.search && (
         <Chip
           label={`${__('pages/payments.search')}: ${filters.search}`}
           onDelete={() => onClearFilter('search')}
+          color="primary"
+          variant="soft"
+          sx={chipSx}
         />
       )}
 
@@ -47,6 +59,9 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
           key={`project-${projectId}`}
           label={`${__('pages/payments.filters.project')}: ${getProjectName(projectId)}`}
           onDelete={() => onClearFilter('project_id', projectId)}
+          color="primary"
+          variant="soft"
+          sx={chipSx}
         />
       ))}
 
@@ -55,6 +70,9 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
           key={`currency-${code}`}
           label={`${__('pages/payments.filters.currency')}: ${getCurrencyLabel(code)}`}
           onDelete={() => onClearFilter('currency', code)}
+          color="primary"
+          variant="soft"
+          sx={chipSx}
         />
       ))}
 
@@ -63,6 +81,9 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
           key={`status-${value}`}
           label={`${__('pages/payments.filters.status')}: ${getStatusLabel(value)}`}
           onDelete={() => onClearFilter('status', value)}
+          color="primary"
+          variant="soft"
+          sx={chipSx}
         />
       ))}
 
@@ -70,6 +91,9 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
         <Chip
           label={`${__('pages/payments.filters.date_from')}: ${filters.date_from ?? '—'} / ${__('pages/payments.filters.date_to')}: ${filters.date_to ?? '—'}`}
           onDelete={() => onClearFilter('date_from')}
+          color="primary"
+          variant="soft"
+          sx={chipSx}
         />
       )}
     </Stack>

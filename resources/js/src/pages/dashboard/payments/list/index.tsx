@@ -25,8 +25,6 @@ import { FiltersChips } from './components/FiltersChips';
 import { InvoiceTable } from './components/InvoiceTable';
 import { ColumnSettingsDialog } from './components/ColumnSettingsDialog';
 
-// ----------------------------------------------------------------------
-
 type PaymentsProps = {
   invoices: InvoiceRow[];
   filters: FilterState;
@@ -34,8 +32,6 @@ type PaymentsProps = {
   currencies: Option[];
   isAdmin: boolean;
 };
-
-// ----------------------------------------------------------------------
 
 export default function PaymentsList({ invoices, filters: serverFilters, projects, currencies, isAdmin }: PaymentsProps) {
   const { __ } = useLang();
@@ -234,7 +230,7 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
             sx={{ mb: { xs: 3, md: 5 } }}
           />
 
-          <Card sx={{ p: 3 }}>
+          <Card>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <FiltersBar
                 filters={filters}
@@ -247,7 +243,7 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
               />
             </LocalizationProvider>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ mb: 2 }} />
 
             <FiltersChips
               filters={filters}

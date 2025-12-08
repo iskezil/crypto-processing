@@ -11,6 +11,7 @@ export type InvoiceCurrency = {
 export type InvoiceProject = {
   id?: number;
   name?: string;
+  ulid?: string;
 };
 
 export type InvoiceRow = {
@@ -26,6 +27,7 @@ export type InvoiceRow = {
   credited_amount: string;
   credited_amount_usd: string;
   tx_ids: string[];
+  tx_explorer_url?: string | null;
   external_order_id?: string | null;
   project?: InvoiceProject | null;
   currency: InvoiceCurrency;
@@ -47,8 +49,8 @@ export type FilterState = {
 export type Option = {
   id: number | null;
   name: string;
-  code?: string | null;
-  icon?: string | null;
+  code: string;
+  icon: string;
 };
 
 export type ColumnKey =

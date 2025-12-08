@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import type React from 'react';
 
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -34,11 +35,13 @@ export function ColumnSettingsDialog({ open, columns, onChange, onClose, onSave 
     onChange(columns.map((column) => (column.key === key ? { ...column, visible: !column.visible } : column)));
   };
 
-  const startDrag = (key: ColumnKey) => {
+  const startDrag = (event: React.DragEvent<HTMLDivElement>, key: ColumnKey) => {
+    event.dataTransfer?.setData('text/plain', key);
     dragKeyRef.current = key;
   };
 
-  const handleDrop = (targetKey: ColumnKey) => {
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>, targetKey: ColumnKey) => {
+    event.preventDefault();
     const dragKey = dragKeyRef.current;
     if (!dragKey || dragKey === targetKey) return;
 
@@ -69,14 +72,15 @@ export function ColumnSettingsDialog({ open, columns, onChange, onClose, onSave 
               key={column.key}
               disableGutters
               draggable
-              onDragStart={() => startDrag(column.key)}
+              onDragStart={(event) => startDrag(event, column.key)}
               onDragOver={(event) => event.preventDefault()}
-              onDrop={() => handleDrop(column.key)}
+              onDrop={(event) => handleDrop(event, column.key)}
               secondaryAction={
                 <Checkbox
                   edge="end"
                   checked={column.visible}
                   onChange={() => toggleColumnVisibility(column.key)}
+                  onClick={(event) => event.stopPropagation()}
                   inputProps={{ 'aria-label': column.label }}
                 />
               }

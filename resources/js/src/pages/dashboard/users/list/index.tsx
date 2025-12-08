@@ -38,7 +38,6 @@ import { UserTableFiltersResult } from './components/user-table-filters-result';
 import { UserDeleteDialog } from './components/user-delete-dialog';
 import type { Filters, Role, User } from './types';
 
-// ----------------------------------------------------------------------
 
 interface Props {
   users: User[];
@@ -47,7 +46,6 @@ interface Props {
 
 const metadata = { title: `Users | Dashboard - ${CONFIG.appName}` };
 
-// ----------------------------------------------------------------------
 
 export default function List({ users, roles }: Props) {
   const { __ } = useLang();

@@ -7,6 +7,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
+import Tooltip from '@mui/material/Tooltip';
 
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
@@ -17,7 +19,7 @@ import { Iconify } from 'src/components/iconify';
 import { TokenNetworkAvatar } from 'src/components/token-network-avatar';
 
 import type { InvoiceRow } from '../types';
-import { formatAmount, statusColor, statusIcon } from '../utils';
+import { formatAmount, formatTx, statusColor, statusIcon } from '../utils';
 
 // ----------------------------------------------------------------------
 
@@ -47,7 +49,22 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
     { label: __('pages/payments.details.date'), value: invoice.created_at ? dayjs(invoice.created_at).format('DD.MM.YYYY HH:mm') : '—' },
     { label: __('pages/payments.details.completed_at'), value: invoice.updated_at ? dayjs(invoice.updated_at).format('DD.MM.YYYY HH:mm') : '—' },
     { label: __('pages/payments.details.order_id'), value: invoice.external_order_id ?? '—' },
-    { label: __('pages/payments.details.project'), value: invoice.project?.name ?? '—' },
+    {
+      label: __('pages/payments.details.project'),
+      value:
+        invoice.project?.ulid && invoice.project?.name ? (
+          <Link
+            href={route('projects.show', { project: invoice.project.ulid })}
+            target="_blank"
+            rel="noopener noreferrer"
+            underline="hover"
+          >
+            {invoice.project.name}
+          </Link>
+        ) : (
+          invoice.project?.name ?? '—'
+        ),
+    },
   ];
 
   const amountRows = [
@@ -178,11 +195,21 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                         —
                       </Typography>
                     )}
-                    {invoice.tx_ids.map((tx) => (
-                      <Typography key={tx} variant="body2">
-                        {tx}
-                      </Typography>
-                    ))}
+                    {invoice.tx_ids.map((tx) => {
+                      const explorerUrl = invoice.tx_explorer_url?.replace('{tx}', tx);
+
+                      return (
+                        <Tooltip key={tx} title={tx} placement="top-start">
+                          {explorerUrl ? (
+                            <Link href={explorerUrl} target="_blank" rel="noopener noreferrer" underline="hover">
+                              {formatTx(tx)}
+                            </Link>
+                          ) : (
+                            <Typography variant="body2">{formatTx(tx)}</Typography>
+                          )}
+                        </Tooltip>
+                      );
+                    })}
                     {invoice.address && (
                       <Typography variant="body2" color="text.secondary">
                         {invoice.address}

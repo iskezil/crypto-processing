@@ -105,19 +105,19 @@ class InvoiceController extends Controller
         ];
 
         $columns = [
-            'status' => 'Status',
-            'currency' => 'Currency',
-            'amount' => 'Amount',
-            'amount_usd' => 'Amount USD',
-            'paid_amount' => 'Paid amount',
-            'service_fee' => 'Service fee',
-            'transfer_fee' => 'Transfer fee',
-            'credited_amount' => 'Credited amount',
-            'credited_amount_usd' => 'Credited amount USD',
-            'tx_ids' => 'TXIDS',
-            'number' => 'Invoice number',
-            'project' => 'Project',
-            'created_at' => 'Created at',
+            'status' => __('pages/payments.table.status'),
+            'currency' => __('pages/payments.table.currency'),
+            'amount' => __('pages/payments.table.amount'),
+            'amount_usd' => __('pages/payments.table.amount_usd'),
+            'paid_amount' => __('pages/payments.table.paid'),
+            'service_fee' => __('pages/payments.table.service_fee'),
+            'transfer_fee' => __('pages/payments.table.transfer_fee'),
+            'credited_amount' => __('pages/payments.table.credited'),
+            'credited_amount_usd' => __('pages/payments.table.credited_usd'),
+            'tx_ids' => __('pages/payments.table.txids'),
+            'number' => __('pages/payments.table.number'),
+            'project' => __('pages/payments.table.project'),
+            'created_at' => __('pages/payments.table.date'),
         ];
 
         return response()->streamDownload(static function () use ($columns, $invoices) {
@@ -152,9 +152,10 @@ class InvoiceController extends Controller
 
         $query = Invoice::query()
             ->with([
-                'project:id,name,user_id',
+                'project:id,ulid,name,user_id',
+                'tokenNetwork:id,token_id,network_id,explorer_tx_url',
                 'tokenNetwork.token:id,name,code,icon_path',
-                'tokenNetwork.network:id,name,icon_path',
+                'tokenNetwork.network:id,name,icon_path,explorer_tx_url',
             ])
             ->latest('created_at');
 
@@ -299,7 +300,7 @@ class InvoiceController extends Controller
             'credited_amount_usd' => $invoice->credited_amount_usd,
             'tx_ids' => $this->splitTxIds($invoice->tx_ids),
             'external_order_id' => $invoice->external_order_id,
-            'project' => $project?->only(['id', 'name']),
+            'project' => $project?->only(['id', 'name', 'ulid']),
             'currency' => [
                 'token' => $token?->code,
                 'tokenIcon' => $token?->icon_url,
@@ -307,6 +308,7 @@ class InvoiceController extends Controller
                 'network' => $network?->name,
                 'networkIcon' => $network?->icon_url,
             ],
+            'tx_explorer_url' => $invoice->tokenNetwork?->explorer_tx_url ?: $network?->explorer_tx_url,
             'created_at' => optional($invoice->created_at)?->toDateTimeString(),
             'updated_at' => optional($invoice->updated_at)?->toDateTimeString(),
         ];

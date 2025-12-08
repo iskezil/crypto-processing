@@ -5,8 +5,6 @@ import type { TypographyProps } from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
-// ----------------------------------------------------------------------
-
 type SearchNotFoundProps = BoxProps & {
   query?: string;
   sx?: SxProps<Theme>;
@@ -16,45 +14,54 @@ type SearchNotFoundProps = BoxProps & {
   };
 };
 
-export function SearchNotFound({ query, sx, slotProps, ...other }: SearchNotFoundProps) {
+const baseSx: SxProps<Theme> = {
+  gap: 1,
+  display: 'flex',
+  borderRadius: 1.5,
+  textAlign: 'center',
+  flexDirection: 'column',
+};
+
+function mergeSx(...items: Array<SxProps<Theme> | undefined>): SxProps<Theme> {
+  // MUI sx спокойно принимает массив, поэтому возвращаем массив как SxProps
+  return items.filter(Boolean) as SxProps<Theme>;
+}
+
+export function SearchNotFound({
+                                 query,
+                                 sx,
+                                 slotProps,
+                                 ...other
+                               }: SearchNotFoundProps) {
+  const { title, description } = slotProps ?? {};
+
+  const containerSx = mergeSx(baseSx, sx);
+
   if (!query) {
     return (
-      <Typography variant="body2" {...slotProps?.description}>
-        Please enter keywords
-      </Typography>
+      <Box sx={containerSx} {...other}>
+        <Typography variant="body2" {...description}>
+          Please enter keywords
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <Box
-      sx={[
-        {
-          gap: 1,
-          display: 'flex',
-          borderRadius: 1.5,
-          textAlign: 'center',
-          flexDirection: 'column',
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-      {...other}
-    >
+    <Box sx={containerSx} {...other}>
       <Typography
         variant="h6"
-        {...slotProps?.title}
-        sx={[
-          { color: 'text.primary' },
-          ...(Array.isArray(slotProps?.title?.sx) ? slotProps.title.sx : [slotProps?.title?.sx]),
-        ]}
+        {...title}
+        sx={mergeSx({ color: 'text.primary' }, title?.sx)}
       >
         Not found
       </Typography>
 
-      <Typography variant="body2" {...slotProps?.description}>
-        No results found for &nbsp;
-        <strong>{`"${query}"`}</strong>
-        .
-        <br /> Try checking for typos or using complete words.
+      <Typography variant="body2" {...description}>
+        No results found for&nbsp;
+        <strong>{`"${query}"`}</strong>.
+        <br />
+        Try checking for typos or using complete words.
       </Typography>
     </Box>
   );
