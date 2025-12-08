@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { router } from '@inertiajs/react';
 import dayjs from 'dayjs';
 
@@ -9,6 +11,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
@@ -16,9 +19,10 @@ import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
 import { Iconify } from 'src/components/iconify';
 import { TokenNetworkAvatar } from 'src/components/token-network-avatar';
+import type { IconifyName } from 'src/components/iconify';
 
 import type { InvoiceRow } from '../types';
-import { formatAmount, formatTx, statusColor, statusIcon, InvoiceStatus } from '../utils';
+import { formatAmount, formatTx, InvoiceStatus } from '../utils';
 
 type Props = {
     invoice: InvoiceRow;
@@ -27,18 +31,32 @@ type Props = {
 
 export default function PaymentView({ invoice, isAdmin }: Props) {
     const { __ } = useLang();
+    const theme = useTheme();
     const title = __('pages/payments.details.title');
     const listRoute = isAdmin ? 'payments.admin' : 'payments.index';
     const currencyCode = invoice.currency.token ?? invoice.currency.code ?? '';
+    const currencyName = invoice.currency.token ?? invoice.currency.code ?? '—';
+    const networkName = invoice.currency.network ?? '—';
 
     const status = invoice.status as InvoiceStatus;
-
-    const statusPaletteKey = statusColor[status];
     const statusLabel = __(`pages/payments.statuses.${status}`);
 
-    // ✅ fix: Iconify ждёт строго типизированный union, а у нас string.
-    // Локально кастуем — так TS перестанет ругаться, а рантайм не меняется.
-    const statusIconName = statusIcon[status] as unknown as Parameters<typeof Iconify>[0]['icon'];
+    const statusStyles = useMemo(
+        () => ({
+            paid: { icon: 'solar:file-check-bold-duotone', color: theme.palette.success.main },
+            overpaid: { icon: 'solar:wallet-money-bold', color: theme.palette.secondary.main },
+            partial: { icon: 'solar:pie-chart-2-bold', color: theme.palette.warning.main },
+            canceled: { icon: 'solar:clock-circle-bold', color: theme.palette.error.main },
+            created: { icon: 'solar:sort-by-time-bold-duotone', color: theme.palette.warning.main },
+        }) as Record<InvoiceStatus, { icon: IconifyName; color: string }>,
+        [theme.palette],
+    );
+
+    const statusStyle = statusStyles[status] ?? statusStyles.created;
+
+    const statusIconName = statusStyle.icon as Parameters<typeof Iconify>[0]['icon'];
+    const statusColorValue = statusStyle.color;
+    const statusContrastText = theme.palette.getContrastText(statusColorValue);
 
     const createdAt = invoice.created_at
         ? dayjs(invoice.created_at).format('DD.MM.YYYY HH:mm')
@@ -124,14 +142,13 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                                 minHeight: 420,
                                 display: 'flex',
                                 flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                alignItems: 'stretch',
                                 textAlign: 'center',
-                                gap: 3,
+                                gap: 2.5,
                                 borderRadius: 2,
                             }}
                         >
-                            <Stack spacing={1} alignItems="center">
+                            <Stack spacing={0.75} alignItems="center">
                                 <Typography variant="body2" color="text.secondary">
                                     {createdAt}
                                 </Typography>
@@ -145,6 +162,8 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                                 </Typography>
                             </Stack>
 
+                            <Box sx={{ flexGrow: 1 }} />
+
                             <Stack spacing={1.5} alignItems="center">
                                 <Box
                                     sx={{
@@ -153,8 +172,8 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                                         borderRadius: '50%',
                                         display: 'grid',
                                         placeItems: 'center',
-                                        bgcolor: (theme) => theme.palette[statusPaletteKey].main,
-                                        color: (theme) => theme.palette[statusPaletteKey].contrastText,
+                                        bgcolor: statusColorValue,
+                                        color: statusContrastText,
                                         boxShadow: (theme) => theme.shadows[8],
                                     }}
                                 >
@@ -163,7 +182,7 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
 
                                 <Typography
                                     variant="h6"
-                                    sx={{ fontWeight: 600, color: (theme) => theme.palette[statusPaletteKey].main }}
+                                    sx={{ fontWeight: 600, color: statusColorValue }}
                                 >
                                     {statusLabel}
                                 </Typography>
@@ -198,9 +217,11 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                                     <Iconify
                                         icon={statusIconName}
                                         width={16}
-                                        sx={{ color: (theme) => theme.palette[statusPaletteKey].main }}
+                                        sx={{ color: statusColorValue }}
                                     />
-                                    <Typography component="span">{statusLabel}</Typography>
+                                    <Typography component="span" sx={{ color: statusColorValue }}>
+                                        {statusLabel}
+                                    </Typography>
                                 </Row>
 
                                 <Row label={__('pages/payments.details.type')}>
@@ -247,15 +268,19 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                                 <Row label={__('pages/payments.details.currency')}>
                                     <TokenNetworkAvatar
                                         tokenIcon={invoice.currency.tokenIcon}
-                                        networkIcon={invoice.currency.networkIcon}
-                                        name={currencyCode}
+                                        name={currencyName}
                                         size={28}
                                     />
-                                    <Typography component="span">{currencyCode}</Typography>
+                                    <Typography component="span">{currencyName}</Typography>
                                 </Row>
 
                                 <Row label={__('pages/payments.details.network')}>
-                                    {invoice.currency.network ?? '—'}
+                                    <TokenNetworkAvatar
+                                        tokenIcon={invoice.currency.networkIcon}
+                                        name={networkName}
+                                        size={28}
+                                    />
+                                    <Typography component="span">{networkName}</Typography>
                                 </Row>
                             </Box>
 
@@ -272,28 +297,32 @@ export default function PaymentView({ invoice, isAdmin }: Props) {
                             >
                                 <AmountRow
                                     label={__('pages/payments.details.amount')}
-                                    main={`${formatAmount(invoice.amount)} ${currencyCode}`}
-                                    sub={invoice.amount_usd != null ? `${formatAmount(invoice.amount_usd, 2)} USD` : undefined}
+                                    main={`${formatAmount(invoice.amount)} ${currencyName}`}
+                                />
+
+                                <AmountRow
+                                    label={__('pages/payments.table.amount_usd')}
+                                    main={`$ ${formatAmount(invoice.amount_usd, 2)}`}
                                 />
 
                                 <AmountRow
                                     label={__('pages/payments.details.service_fee')}
-                                    main={`${formatAmount(invoice.service_fee)} ${currencyCode}`}
+                                    main={`${formatAmount(invoice.service_fee)} ${currencyName}`}
                                 />
 
                                 <AmountRow
                                     label={__('pages/payments.details.paid')}
-                                    main={`${formatAmount(invoice.paid_amount)} ${currencyCode}`}
+                                    main={`${formatAmount(invoice.paid_amount)} ${currencyName}`}
                                 />
 
                                 <AmountRow
                                     label={__('pages/payments.details.transfer_fee')}
-                                    main={`${formatAmount(invoice.transfer_fee)} ${currencyCode}`}
+                                    main={`${formatAmount(invoice.transfer_fee)} ${currencyName}`}
                                 />
 
                                 <AmountRow
                                     label={__('pages/payments.details.credited')}
-                                    main={`${formatAmount(invoice.credited_amount)} ${currencyCode}`}
+                                    main={`${formatAmount(invoice.credited_amount)} ${currencyName}`}
                                 />
                             </Box>
 
