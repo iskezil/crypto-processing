@@ -20,8 +20,8 @@ class InvoiceController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:PAYMENTS_VIEW')->only(['index', 'export']);
-        $this->middleware('permission:PAYMENTS_ADMIN_VIEW')->only(['adminIndex', 'adminExport']);
+        $this->middleware('permission:PAYMENTS_VIEW')->only(['index', 'export', 'show']);
+        $this->middleware('permission:PAYMENTS_ADMIN_VIEW')->only(['adminIndex', 'adminExport', 'adminShow']);
     }
 
     public function index(Request $request): Response
@@ -39,9 +39,19 @@ class InvoiceController extends Controller
         return $this->exportInvoices($request, false);
     }
 
+    public function show(Request $request, Invoice $invoice): Response
+    {
+        return $this->renderInvoice($request, $invoice, false);
+    }
+
     public function adminExport(Request $request): StreamedResponse
     {
         return $this->exportInvoices($request, true);
+    }
+
+    public function adminShow(Request $request, Invoice $invoice): Response
+    {
+        return $this->renderInvoice($request, $invoice, true);
     }
 
     public function cancel(Request $request, Invoice $invoice): RedirectResponse
@@ -71,6 +81,16 @@ class InvoiceController extends Controller
             'invoices' => $invoices,
             'projects' => $this->projectOptions($isAdmin),
             'currencies' => $this->currencyOptions(),
+            'isAdmin' => $isAdmin,
+        ]);
+    }
+
+    private function renderInvoice(Request $request, Invoice $invoice, bool $isAdmin): Response
+    {
+        $this->abortIfUnauthorized($invoice, $isAdmin);
+
+        return Inertia::render('dashboard/payments/view', [
+            'invoice' => $this->invoiceResource($invoice, true),
             'isAdmin' => $isAdmin,
         ]);
     }
@@ -146,35 +166,7 @@ class InvoiceController extends Controller
         $this->applyFilters($query, $filters);
 
         $invoices = $query->get()->map(function (Invoice $invoice) {
-            $token = $invoice->tokenNetwork?->token;
-            $network = $invoice->tokenNetwork?->network;
-            $project = $invoice->project;
-
-            return [
-                'id' => $invoice->id,
-                'ulid' => $invoice->ulid,
-                'number' => 'INV-' . $invoice->ulid,
-                'status' => $invoice->status,
-                'amount' => $invoice->amount,
-                'amount_usd' => $invoice->amount_usd,
-                'paid_amount' => $invoice->paid_amount,
-                'service_fee' => $invoice->service_fee,
-                'transfer_fee' => $invoice->transfer_fee,
-                'credited_amount' => $invoice->credited_amount,
-                'credited_amount_usd' => $invoice->credited_amount_usd,
-                'tx_ids' => $this->splitTxIds($invoice->tx_ids),
-                'external_order_id' => $invoice->external_order_id,
-                'project' => $project?->only(['id', 'name']),
-                'currency' => [
-                    'token' => $token?->name,
-                    'tokenIcon' => $token?->icon_url,
-                    'code' => $token?->code,
-                    'network' => $network?->name,
-                    'networkIcon' => $network?->icon_url,
-                ],
-                'created_at' => optional($invoice->created_at)?->toDateTimeString(),
-                'updated_at' => optional($invoice->updated_at)?->toDateTimeString(),
-            ];
+            return $this->invoiceResource($invoice);
         });
 
         return [$filters, $invoices];
@@ -184,18 +176,21 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string'],
-            'project_id' => ['nullable', 'integer'],
-            'currency' => ['nullable', 'string'],
-            'status' => ['nullable', 'string'],
+            'project_id' => ['nullable', 'array'],
+            'project_id.*' => ['integer'],
+            'currency' => ['nullable', 'array'],
+            'currency.*' => ['string'],
+            'status' => ['nullable', 'array'],
+            'status.*' => ['string'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
         ]);
 
         return [
             'search' => $validated['search'] ?? '',
-            'project_id' => $validated['project_id'] ?? null,
-            'currency' => $validated['currency'] ?? null,
-            'status' => $validated['status'] ?? null,
+            'project_id' => isset($validated['project_id']) ? array_map('intval', $validated['project_id']) : [],
+            'currency' => $validated['currency'] ?? [],
+            'status' => $validated['status'] ?? [],
             'date_from' => $validated['date_from'] ?? null,
             'date_to' => $validated['date_to'] ?? null,
         ];
@@ -213,18 +208,20 @@ class InvoiceController extends Controller
         }
 
         if (!empty($filters['project_id'])) {
-            $query->where('project_id', $filters['project_id']);
+            $query->whereIn('project_id', $filters['project_id']);
         }
 
         if (!empty($filters['currency'])) {
             $currency = $filters['currency'];
             $query->whereHas('tokenNetwork.token', static function ($tokenQuery) use ($currency) {
-                $tokenQuery->where('code', $currency)->orWhere('name', 'like', "%{$currency}%");
+                $tokenQuery->whereIn('code', $currency)->orWhere(function ($innerQuery) use ($currency) {
+                    $innerQuery->whereIn('name', $currency);
+                });
             });
         }
 
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->whereIn('status', $filters['status']);
         }
 
         if (!empty($filters['date_from'])) {
@@ -280,5 +277,66 @@ class InvoiceController extends Controller
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function invoiceResource(Invoice $invoice, bool $includeMeta = false): array
+    {
+        $token = $invoice->tokenNetwork?->token;
+        $network = $invoice->tokenNetwork?->network;
+        $project = $invoice->project;
+
+        $base = [
+            'id' => $invoice->id,
+            'ulid' => $invoice->ulid,
+            'number' => 'INV-' . $invoice->ulid,
+            'status' => $invoice->status,
+            'amount' => $invoice->amount,
+            'amount_usd' => $invoice->amount_usd,
+            'paid_amount' => $invoice->paid_amount,
+            'service_fee' => $invoice->service_fee,
+            'transfer_fee' => $invoice->transfer_fee,
+            'credited_amount' => $invoice->credited_amount,
+            'credited_amount_usd' => $invoice->credited_amount_usd,
+            'tx_ids' => $this->splitTxIds($invoice->tx_ids),
+            'external_order_id' => $invoice->external_order_id,
+            'project' => $project?->only(['id', 'name']),
+            'currency' => [
+                'token' => $token?->code,
+                'tokenIcon' => $token?->icon_url,
+                'code' => $token?->code,
+                'network' => $network?->name,
+                'networkIcon' => $network?->icon_url,
+            ],
+            'created_at' => optional($invoice->created_at)?->toDateTimeString(),
+            'updated_at' => optional($invoice->updated_at)?->toDateTimeString(),
+        ];
+
+        if (! $includeMeta) {
+            return $base;
+        }
+
+        $metadata = $invoice->metadata ?? [];
+
+        $address = $metadata['address']
+            ?? $metadata['to_address']
+            ?? $metadata['wallet_address']
+            ?? $invoice->depositEvents()->latest()->first()?->to_address;
+
+        return array_merge($base, [
+            'address' => $address,
+            'can_cancel' => $invoice->status === 'created',
+        ]);
+    }
+
+    private function abortIfUnauthorized(Invoice $invoice, bool $isAdmin): void
+    {
+        if ($isAdmin) {
+            return;
+        }
+
+        $userId = Auth::id();
+        if ($invoice->project?->user_id !== $userId) {
+            abort(403);
+        }
     }
 }

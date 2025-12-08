@@ -125,6 +125,12 @@ declare module 'ziggy-js' {
     ];
     "payments.index": [];
     "payments.export": [];
+    'payments.show': {
+      uri: 'payments/{invoice}',
+      methods: ['GET', 'HEAD'],
+      parameters: ['invoice'],
+      bindings: { invoice: 'ulid' },
+    },
     "payments.cancel": [
       {
         "name": "invoice";
@@ -134,6 +140,12 @@ declare module 'ziggy-js' {
     ];
     "payments.admin": [];
     "payments.admin.export": [];
+    'payments.admin.show': {
+      uri: 'admin/payments/{invoice}',
+      methods: ['GET', 'HEAD'],
+      parameters: ['invoice'],
+      bindings: { invoice: 'ulid' },
+    },
     "register": [];
     "login": [];
     "password.request": [];
