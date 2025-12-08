@@ -12,13 +12,15 @@ import { Iconify } from 'src/components/iconify';
 import { projectAccent } from 'src/theme/projectAccent';
 import { useLang } from 'src/hooks/useLang';
 
-import type { DateRangeValue, FilterState, Option, StatusOption } from '../../types';
-import {TokenNetworkAvatar} from "@/components/token-network-avatar";
+import Typography from '@mui/material/Typography';
+
+import { TokenNetworkAvatar } from '@/components/token-network-avatar';
+import type { CurrencyOption, DateRangeValue, FilterState, ProjectOption, StatusOption } from '../../types';
 
 type Props = {
   filters: FilterState;
-  projects: Option[];
-  currencies: Option[];
+  projects: ProjectOption[];
+  currencies: CurrencyOption[];
   statuses: StatusOption[];
   dateRange: DateRangeValue;
 
@@ -47,7 +49,7 @@ export function FiltersBar({
   };
 
   const projectsWithId = projects.filter(
-    (p): p is Option & { id: number } => typeof p.id === 'number'
+    (p): p is ProjectOption & { id: number } => typeof p.id === 'number'
   );
 
   const renderProjectValues = (values: number[]) => (
@@ -61,9 +63,12 @@ export function FiltersBar({
 
   const renderCurrencyValues = (values: string[]) => (
     <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-      {values.map((code) => (
-        <Chip key={`currency-${code}`} label={code} size="small" sx={chipSx} />
-      ))}
+      {values.map((code) => {
+        const currency = currencies.find((item) => item.code === code);
+        const label = currency ? `${currency.token} · ${currency.network}` : code;
+
+        return <Chip key={`currency-${code}`} label={label} size="small" sx={chipSx} />;
+      })}
     </Stack>
   );
 
@@ -175,21 +180,20 @@ export function FiltersBar({
         }}
       >
         {currencies.map((currency) => (
-          <MenuItem
-            key={`${currency.code}-${currency.name}`}
-            value={currency.code ?? currency.name}
-          >
+          <MenuItem key={`${currency.code}-${currency.token}`} value={currency.code}>
             <Stack direction="row" spacing={1} alignItems="center">
-              {currency.icon ? (
-                <TokenNetworkAvatar
-                  tokenIcon={currency.icon}
-                  networkIcon={currency.icon}
-                  name={currency.code}
-                  size={24}
-                />
-              ) : null}
-              <Stack spacing={0.25}>
-                <span>{currency.code}</span>
+              <TokenNetworkAvatar
+                tokenIcon={currency.tokenIcon}
+                networkIcon={currency.networkIcon}
+                name={currency.token}
+                size={24}
+              />
+
+              <Stack direction="row" spacing={0.5} alignItems="baseline">
+                <Typography variant="subtitle2">{currency.token}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  · {currency.network}
+                </Typography>
               </Stack>
             </Stack>
           </MenuItem>

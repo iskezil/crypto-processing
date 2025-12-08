@@ -37,10 +37,11 @@ export function ColumnSettingsDialog({ open, columns, onChange, onClose, onSave 
 
   const startDrag = (event: React.DragEvent<HTMLDivElement>, key: ColumnKey) => {
     event.dataTransfer?.setData('text/plain', key);
+    event.dataTransfer.effectAllowed = 'move';
     dragKeyRef.current = key;
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>, targetKey: ColumnKey) => {
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>, targetKey: ColumnKey) => {
     event.preventDefault();
     const dragKey = dragKeyRef.current;
     if (!dragKey || dragKey === targetKey) return;
@@ -52,7 +53,12 @@ export function ColumnSettingsDialog({ open, columns, onChange, onClose, onSave 
     const updated = [...columns];
     const [moved] = updated.splice(currentIndex, 1);
     updated.splice(targetIndex, 0, moved);
+    dragKeyRef.current = targetKey;
     onChange(updated);
+  };
+
+  const handleDragEnd = () => {
+    dragKeyRef.current = null;
   };
 
   const handleSave = () => {
@@ -73,8 +79,9 @@ export function ColumnSettingsDialog({ open, columns, onChange, onClose, onSave 
               disableGutters
               draggable
               onDragStart={(event) => startDrag(event, column.key)}
+              onDragEnter={(event) => handleDragEnter(event, column.key)}
               onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => handleDrop(event, column.key)}
+              onDragEnd={handleDragEnd}
               secondaryAction={
                 <Checkbox
                   edge="end"

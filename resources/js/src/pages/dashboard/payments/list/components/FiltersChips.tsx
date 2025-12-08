@@ -5,12 +5,12 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { projectAccent } from 'src/theme/projectAccent';
 import { useLang } from 'src/hooks/useLang';
 
-import type { FilterState, Option, StatusOption } from '../../types';
+import type { CurrencyOption, FilterState, ProjectOption, StatusOption } from '../../types';
 
 type Props = {
   filters: FilterState;
-  projects: Option[];
-  currencies: Option[];
+  projects: ProjectOption[];
+  currencies: CurrencyOption[];
   statuses: StatusOption[];
   onClearFilter: (key: keyof FilterState, value?: string | number) => void;
 };
@@ -19,7 +19,13 @@ export function FiltersChips({ filters, projects, currencies, statuses, onClearF
   const { __ } = useLang();
 
   const getProjectName = (id: number) => projects.find((project) => project.id === id)?.name ?? '';
-  const getCurrencyLabel = (code: string) => currencies.find((currency) => currency.code === code)?.code ?? code;
+  const getCurrencyLabel = (code: string) => {
+    const currency = currencies.find((item) => item.code === code);
+
+    if (!currency) return code;
+
+    return `${currency.token} · ${currency.network}`;
+  };
   const getStatusLabel = (value: string) => statuses.find((status) => status.value === value)?.label ?? value;
 
   const chipSx: SxProps<Theme> = (theme) => ({

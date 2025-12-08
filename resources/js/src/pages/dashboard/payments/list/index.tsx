@@ -18,7 +18,14 @@ import { route } from 'src/routes/route';
 import { Iconify } from 'src/components/iconify';
 import { SearchNotFound } from 'src/components/search-not-found';
 
-import type { ColumnSetting, DateRangeValue, FilterState, InvoiceRow, Option } from '../types';
+import type {
+  ColumnSetting,
+  CurrencyOption,
+  DateRangeValue,
+  FilterState,
+  InvoiceRow,
+  ProjectOption,
+} from '../types';
 import { buildColumns, toStatusOptions } from '../utils';
 import { FiltersBar } from './components/FiltersBar';
 import { FiltersChips } from './components/FiltersChips';
@@ -28,14 +35,15 @@ import { ColumnSettingsDialog } from './components/ColumnSettingsDialog';
 type PaymentsProps = {
   invoices: InvoiceRow[];
   filters: FilterState;
-  projects: Option[];
-  currencies: Option[];
+  projects: ProjectOption[];
+  currencies: CurrencyOption[];
   isAdmin: boolean;
 };
 
 export default function PaymentsList({ invoices, filters: serverFilters, projects, currencies, isAdmin }: PaymentsProps) {
   const { __ } = useLang();
   const mountedRef = useRef(false);
+  const lastSubmittedSearchRef = useRef(serverFilters.search ?? '');
 
   const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
     if (Array.isArray(value)) return value.filter((item) => item !== null && item !== undefined) as T[];
@@ -89,14 +97,17 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
   }, [__]);
 
   useEffect(() => {
-    setFilters({
-      search: serverFilters.search ?? '',
+    setFilters((prev) => ({
+      search:
+        serverFilters.search === lastSubmittedSearchRef.current
+          ? serverFilters.search ?? ''
+          : prev.search,
       project_id: normalizeArray<number>(serverFilters.project_id),
       currency: normalizeArray<string>(serverFilters.currency),
       status: normalizeArray<string>(serverFilters.status),
       date_from: serverFilters.date_from ?? null,
       date_to: serverFilters.date_to ?? null,
-    });
+    }));
 
     setDateRange([
       serverFilters.date_from ? dayjs(serverFilters.date_from) : null,
@@ -123,6 +134,7 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
   }, [filters.search]);
 
   const submitFilters = (values: FilterState) => {
+    lastSubmittedSearchRef.current = values.search ?? '';
     const query: Record<string, any> = {};
     if (values.search) query.search = values.search;
     if (values.project_id.length) query.project_id = values.project_id;

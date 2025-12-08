@@ -46,11 +46,18 @@ export type FilterState = {
   date_to?: string | null;
 };
 
-export type Option = {
+export type ProjectOption = {
   id: number | null;
   name: string;
+};
+
+export type CurrencyOption = {
+  id: number | null;
+  token: string;
+  network: string;
   code: string;
-  icon: string;
+  tokenIcon?: string | null;
+  networkIcon?: string | null;
 };
 
 export type ColumnKey =

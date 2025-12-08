@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Invoice;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Project;
-use App\Models\Token;
+use App\Models\TokenNetwork;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -204,7 +204,20 @@ class InvoiceController extends Controller
             $query->where(static function ($builder) use ($search) {
                 $builder->where('ulid', 'like', "%{$search}%")
                     ->orWhere('external_order_id', 'like', "%{$search}%")
-                    ->orWhereHas('project', static fn($projectQuery) => $projectQuery->where('name', 'like', "%{$search}%"));
+                    ->orWhere('tx_ids', 'like', "%{$search}%")
+                    ->orWhereHas(
+                        'project',
+                        static fn($projectQuery) => $projectQuery->where('name', 'like', "%{$search}%")
+                    )
+                    ->orWhereHas(
+                        'tokenNetwork',
+                        static function ($tokenNetworkQuery) use ($search) {
+                            $tokenNetworkQuery
+                                ->where('full_code', 'like', "%{$search}%")
+                                ->orWhereHas('token', static fn($tokenQuery) => $tokenQuery->where('code', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%"))
+                                ->orWhereHas('network', static fn($networkQuery) => $networkQuery->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
+                        }
+                    );
             });
         }
 
@@ -214,10 +227,14 @@ class InvoiceController extends Controller
 
         if (!empty($filters['currency'])) {
             $currency = $filters['currency'];
-            $query->whereHas('tokenNetwork.token', static function ($tokenQuery) use ($currency) {
-                $tokenQuery->whereIn('code', $currency)->orWhere(function ($innerQuery) use ($currency) {
-                    $innerQuery->whereIn('name', $currency);
-                });
+            $query->whereHas('tokenNetwork', static function ($tokenNetworkQuery) use ($currency) {
+                $tokenNetworkQuery->whereIn('full_code', $currency)
+                    ->orWhereHas('token', static function ($tokenQuery) use ($currency) {
+                        $tokenQuery->whereIn('code', $currency)->orWhereIn('name', $currency);
+                    })
+                    ->orWhereHas('network', static function ($networkQuery) use ($currency) {
+                        $networkQuery->whereIn('name', $currency)->orWhereIn('code', $currency);
+                    });
             });
         }
 
@@ -247,25 +264,26 @@ class InvoiceController extends Controller
 
     private function currencyOptions(): Collection
     {
-        $currencies = Token::query()
-            ->select(['id', 'name', 'code', 'icon_path'])
-            ->orderBy('name')
-            ->get()
-            ->unique('code')
+        $tokenNetworks = TokenNetwork::query()
+            ->select(['id', 'token_id', 'network_id', 'full_code'])
+            ->with([
+                'token:id,code,name,icon_path',
+                'network:id,name,icon_path',
+            ])
+            ->orderBy('full_code')
+            ->get();
+
+        return $tokenNetworks
+            ->filter(static fn(TokenNetwork $tokenNetwork) => $tokenNetwork->token && $tokenNetwork->network)
+            ->map(static fn(TokenNetwork $tokenNetwork) => [
+                'id' => $tokenNetwork->id,
+                'token' => $tokenNetwork->token?->code,
+                'network' => $tokenNetwork->network?->name,
+                'code' => $tokenNetwork->full_code ?? ($tokenNetwork->token?->code . ':' . $tokenNetwork->network?->name),
+                'tokenIcon' => $tokenNetwork->token?->icon_url,
+                'networkIcon' => $tokenNetwork->network?->icon_url,
+            ])
             ->values();
-
-        $defaultCurrency = ['id' => null, 'name' => 'USDT Tether', 'code' => 'USDT', 'icon' => null];
-
-        if ($currencies->where('code', 'USDT')->isEmpty()) {
-            $currencies->prepend($defaultCurrency);
-        }
-
-        return $currencies->map(static fn($currency) => [
-            'id' => $currency['id'],
-            'name' => $currency['name'],
-            'code' => $currency['code'],
-            'icon' => $currency['icon_url'] ?? null,
-        ]);
     }
 
     private function splitTxIds(?string $txIds): array
