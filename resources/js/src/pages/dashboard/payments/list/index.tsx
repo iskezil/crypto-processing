@@ -20,6 +20,7 @@ import { SearchNotFound } from 'src/components/search-not-found';
 
 import type {
   ColumnSetting,
+  ColumnKey,
   CurrencyOption,
   DateRangeValue,
   FilterState,
@@ -50,6 +51,22 @@ const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
   if (Array.isArray(value)) return value.filter((v): v is T => v !== null && v !== undefined);
   if (value !== null && value !== undefined) return [value];
   return [];
+};
+
+const exportColumnKeyMap: Record<ColumnKey, string> = {
+  status: 'status',
+  currency: 'currency',
+  amount: 'amount',
+  amountUsd: 'amount_usd',
+  paid: 'paid_amount',
+  serviceFee: 'service_fee',
+  transferFee: 'transfer_fee',
+  credited: 'credited_amount',
+  creditedUsd: 'credited_amount_usd',
+  tx: 'tx_ids',
+  number: 'number',
+  project: 'project',
+  date: 'created_at',
 };
 
 const toQueryParams = (values: FilterState) => {
@@ -381,6 +398,7 @@ export default function PaymentsList({
 
   const handleExport = useCallback(() => {
     const params = new URLSearchParams();
+
     Object.entries(filters).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach((item) => params.append(`${key}[]`, String(item)));
@@ -389,9 +407,16 @@ export default function PaymentsList({
       }
     });
 
+    const exportColumns = columns
+      .filter((column) => column.visible)
+      .map((column) => exportColumnKeyMap[column.key])
+      .filter(Boolean);
+
+    exportColumns.forEach((key) => params.append('columns[]', key));
+
     const url = route(exportRouteName);
     window.location.href = params.toString() ? `${url}?${params.toString()}` : url;
-  }, [filters, exportRouteName]);
+  }, [columns, filters, exportRouteName]);
 
   const handleSaveColumns = useCallback(() => {
     if (settingsColumns.some((c) => c.visible)) {

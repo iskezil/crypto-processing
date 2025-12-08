@@ -20,7 +20,7 @@ export const BreadcrumbsContainer = styled('div')(({ theme }) => ({
   flexWrap: 'wrap',
   gap: theme.spacing(2),
   alignItems: 'flex-start',
-  justifyContent: 'flex-end',
+  justifyContent: 'flex-start',
 }));
 
 export const BreadcrumbsContent = styled('div')(({ theme }) => ({

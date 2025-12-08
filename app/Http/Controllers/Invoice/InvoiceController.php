@@ -104,46 +104,100 @@ class InvoiceController extends Controller
             'Content-Disposition' => 'attachment; filename="invoices-' . now()->format('Y-m-d_His') . '.csv"',
         ];
 
-        $columns = [
-            'status' => __('pages/payments.table.status'),
-            'currency' => __('pages/payments.table.currency'),
-            'amount' => __('pages/payments.table.amount'),
-            'amount_usd' => __('pages/payments.table.amount_usd'),
-            'paid_amount' => __('pages/payments.table.paid'),
-            'service_fee' => __('pages/payments.table.service_fee'),
-            'transfer_fee' => __('pages/payments.table.transfer_fee'),
-            'credited_amount' => __('pages/payments.table.credited'),
-            'credited_amount_usd' => __('pages/payments.table.credited_usd'),
-            'tx_ids' => __('pages/payments.table.txids'),
-            'number' => __('pages/payments.table.number'),
-            'project' => __('pages/payments.table.project'),
-            'created_at' => __('pages/payments.table.date'),
-        ];
+        $columns = $this->exportColumns($request);
 
         return response()->streamDownload(static function () use ($columns, $invoices) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, array_values($columns));
+            fputcsv($handle, array_column($columns, 'label'));
 
             foreach ($invoices as $invoice) {
-                fputcsv($handle, [
-                    $invoice['status'],
-                    $invoice['currency']['token'] ?? '',
-                    $invoice['amount'],
-                    $invoice['amount_usd'],
-                    $invoice['paid_amount'],
-                    $invoice['service_fee'],
-                    $invoice['transfer_fee'],
-                    $invoice['credited_amount'],
-                    $invoice['credited_amount_usd'],
-                    implode('; ', $invoice['tx_ids']),
-                    $invoice['number'],
-                    $invoice['project']['name'] ?? '',
-                    $invoice['created_at'],
-                ]);
+                $row = [];
+
+                foreach ($columns as $column) {
+                    $row[] = $column['value']($invoice);
+                }
+
+                fputcsv($handle, $row);
             }
 
             fclose($handle);
         }, headers: $headers);
+    }
+
+    private function exportColumns(Request $request): array
+    {
+        $availableColumns = [
+            'status' => [
+                'label' => __('pages/payments.table.status'),
+                'value' => static fn(array $invoice) => $invoice['status'],
+            ],
+            'currency' => [
+                'label' => __('pages/payments.table.currency'),
+                'value' => static fn(array $invoice) => $invoice['currency']['token'] ?? '',
+            ],
+            'amount' => [
+                'label' => __('pages/payments.table.amount'),
+                'value' => static fn(array $invoice) => $invoice['amount'],
+            ],
+            'amount_usd' => [
+                'label' => __('pages/payments.table.amount_usd'),
+                'value' => static fn(array $invoice) => $invoice['amount_usd'],
+            ],
+            'paid_amount' => [
+                'label' => __('pages/payments.table.paid'),
+                'value' => static fn(array $invoice) => $invoice['paid_amount'],
+            ],
+            'service_fee' => [
+                'label' => __('pages/payments.table.service_fee'),
+                'value' => static fn(array $invoice) => $invoice['service_fee'],
+            ],
+            'transfer_fee' => [
+                'label' => __('pages/payments.table.transfer_fee'),
+                'value' => static fn(array $invoice) => $invoice['transfer_fee'],
+            ],
+            'credited_amount' => [
+                'label' => __('pages/payments.table.credited'),
+                'value' => static fn(array $invoice) => $invoice['credited_amount'],
+            ],
+            'credited_amount_usd' => [
+                'label' => __('pages/payments.table.credited_usd'),
+                'value' => static fn(array $invoice) => $invoice['credited_amount_usd'],
+            ],
+            'tx_ids' => [
+                'label' => __('pages/payments.table.txids'),
+                'value' => static fn(array $invoice) => implode('; ', $invoice['tx_ids']),
+            ],
+            'number' => [
+                'label' => __('pages/payments.table.number'),
+                'value' => static fn(array $invoice) => $invoice['number'],
+            ],
+            'project' => [
+                'label' => __('pages/payments.table.project'),
+                'value' => static fn(array $invoice) => $invoice['project']['name'] ?? '',
+            ],
+            'created_at' => [
+                'label' => __('pages/payments.table.date'),
+                'value' => static fn(array $invoice) => $invoice['created_at'],
+            ],
+        ];
+
+        $requested = $request->input('columns');
+
+        if (is_array($requested)) {
+            $filtered = [];
+
+            foreach ($requested as $key) {
+                if (isset($availableColumns[$key])) {
+                    $filtered[$key] = $availableColumns[$key];
+                }
+            }
+
+            if (!empty($filtered)) {
+                return array_values($filtered);
+            }
+        }
+
+        return array_values($availableColumns);
     }
 
     private function prepareInvoices(Request $request, bool $isAdmin): array
