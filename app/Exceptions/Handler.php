@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -38,6 +39,8 @@ class Handler extends ExceptionHandler
             return parent::render($request, $e);
         }
 
+        $this->syncErrorTranslations();
+
         // 419 (CSRF/session) как отдельный кейс
         if ($e instanceof TokenMismatchException) {
             return Inertia::render('errors/419')
@@ -57,17 +60,27 @@ class Handler extends ExceptionHandler
             ];
 
             if (isset($pageMap[$status])) {
-                return Inertia::render($pageMap[$status])
-                    ->toResponse($request)
-                    ->setStatusCode($status);
+                return $this->renderErrorPage($request, $pageMap[$status], $status);
             }
 
             return parent::render($request, $e);
         }
 
         // Любая иная непойманная ошибка -> 500 как HTML
-        return Inertia::render('errors/500')
+        return $this->renderErrorPage($request, 'errors/500', 500);
+    }
+
+    private function syncErrorTranslations(): void
+    {
+        if (function_exists('syncLangFiles')) {
+            syncLangFiles(['errors']);
+        }
+    }
+
+    private function renderErrorPage(Request $request, string $page, int $statusCode)
+    {
+        return Inertia::render($page)
             ->toResponse($request)
-            ->setStatusCode(500);
+            ->setStatusCode($statusCode);
     }
 }
