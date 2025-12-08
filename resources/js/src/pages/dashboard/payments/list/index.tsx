@@ -31,6 +31,9 @@ import { FiltersBar } from './components/FiltersBar';
 import { FiltersChips } from './components/FiltersChips';
 import { InvoiceTable } from './components/InvoiceTable';
 import { ColumnSettingsDialog } from './components/ColumnSettingsDialog';
+import {Scrollbar} from "@/components/scrollbar";
+import {InvoiceAnalytic} from "@/pages/dashboard/payments/list/components/InvoiceAnalytic";
+import {useTheme} from "@mui/material/styles";
 
 type PaymentsProps = {
   invoices: InvoiceRow[];
@@ -92,7 +95,7 @@ export default function PaymentsList({
   const labelNumber = __('pages/payments.table.number');
   const labelProject = __('pages/payments.table.project');
   const labelDate = __('pages/payments.table.date');
-
+const theme = useTheme();
   const preparedColumns = useMemo(() => {
     const labels = {
       status: labelStatus,
@@ -397,6 +400,69 @@ export default function PaymentsList({
             }
             sx={{ mb: { xs: 3, md: 5 } }}
           />
+
+          <Card sx={{ mb: { xs: 3, md: 5 } }}>
+            <Scrollbar sx={{ minHeight: 108 }}>
+              <Stack
+                divider={<Divider orientation="vertical" flexItem sx={{ borderStyle: 'dashed' }} />}
+                sx={{ py: 2, flexDirection: 'row' }}
+              >
+                <InvoiceAnalytic
+                  title="Total"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:bill-list-bold-duotone"
+                  color={theme.vars.palette.info.main}
+                />
+
+                <InvoiceAnalytic
+                  title="Paid"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:file-check-bold-duotone"
+                  color={theme.vars.palette.success.main}
+                />
+
+                <InvoiceAnalytic
+                  title="Overpaid"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:wallet-money-bold"
+                  color={theme.vars.palette.secondary.main}
+                />
+
+                <InvoiceAnalytic
+                  title="Partial"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:pie-chart-2-bold"
+                  color={theme.vars.palette.warning.main}
+                />
+
+                <InvoiceAnalytic
+                  title="Canceled"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:clock-circle-bold"
+                  color={theme.vars.palette.error.main}
+                />
+
+                <InvoiceAnalytic
+                  title="created"
+                  total={100}
+                  percent={100}
+                  price={100}
+                  icon="solar:sort-by-time-bold-duotone"
+                  color={theme.vars.palette.warning.main}
+                />
+              </Stack>
+            </Scrollbar>
+          </Card>
 
           <Card>
             <LocalizationProvider dateAdapter={AdapterDayjs}>

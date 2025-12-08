@@ -1,6 +1,11 @@
-import type { ColumnSetting, ColumnKey, InvoiceRow, StatusOption } from './types';
+import type { ColumnSetting, ColumnKey, StatusOption } from './types';
 
-export const statusColor: Record<string, 'warning' | 'error' | 'success' | 'info'> = {
+// ----------------------------------------------------------------------
+// ✅ 1) Строгий union статусов
+export type InvoiceStatus = 'paid' | 'overpaid' | 'partial' | 'canceled' | 'created';
+
+// ✅ 2) Строго типизированные схемы цветов/иконок
+export const statusColor: Record<InvoiceStatus, 'warning' | 'error' | 'success' | 'info'> = {
   created: 'warning',
   canceled: 'error',
   paid: 'success',
@@ -8,13 +13,15 @@ export const statusColor: Record<string, 'warning' | 'error' | 'success' | 'info
   overpaid: 'info',
 };
 
-export const statusIcon: Record<string, string> = {
+export const statusIcon: Record<InvoiceStatus, string> = {
   paid: 'solar:check-circle-bold',
+  overpaid: 'solar:wallet-money-bold',
+  partial: 'solar:check-circle-line-duotone',
   canceled: 'solar:close-circle-bold',
-  created: 'solar:check-circle-bold',
-  partial: 'solar:check-circle-bold',
-  overpaid: 'solar:check-circle-bold',
+  created: 'solar:clock-circle-bold',
 };
+
+// ----------------------------------------------------------------------
 
 export const buildColumns = (labels: Record<ColumnKey, string>): ColumnSetting[] => [
   { key: 'status', label: labels.status, visible: true },
@@ -37,7 +44,8 @@ export const formatAmount = (value: string | null, maximumFractionDigits = 8) =>
   return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits });
 };
 
-export const formatTx = (value: string) => (value.length <= 8 ? value : `${value.slice(0, 4)}...${value.slice(-4)}`);
+export const formatTx = (value: string) =>
+    value.length <= 8 ? value : `${value.slice(0, 4)}...${value.slice(-4)}`;
 
 export const toStatusOptions = (translate: (key: string) => string): StatusOption[] => [
   { value: 'created', label: translate('pages/payments.statuses.created') },

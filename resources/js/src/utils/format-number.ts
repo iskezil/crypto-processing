@@ -15,7 +15,7 @@ export function fNumber(inputValue: InputNumberValue, options?: Options) {
   const number = processInput(inputValue);
   if (number === null) return '';
 
-  const fm = new Intl.NumberFormat('locale.code', {
+  const fm = new Intl.NumberFormat('ru', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
     ...options,
@@ -30,7 +30,7 @@ export function fCurrency(inputValue: InputNumberValue, options?: Options) {
   const number = processInput(inputValue);
   if (number === null) return '';
 
-  const fm = new Intl.NumberFormat('locale.code', {
+  const fm = new Intl.NumberFormat('ru', {
     style: 'currency',
     currency: 'locale.currency',
     minimumFractionDigits: 0,
@@ -47,7 +47,7 @@ export function fPercent(inputValue: InputNumberValue, options?: Options) {
   const number = processInput(inputValue);
   if (number === null) return '';
 
-  const fm = new Intl.NumberFormat('locale.code', {
+  const fm = new Intl.NumberFormat('ru', {
     style: 'percent',
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
@@ -63,7 +63,7 @@ export function fShortenNumber(inputValue: InputNumberValue, options?: Options) 
   const number = processInput(inputValue);
   if (number === null) return '';
 
-  const fm = new Intl.NumberFormat('locale.code', {
+  const fm = new Intl.NumberFormat('ru', {
     notation: 'compact',
     maximumFractionDigits: 2,
     ...options,
