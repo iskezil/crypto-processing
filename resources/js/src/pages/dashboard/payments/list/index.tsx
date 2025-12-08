@@ -32,10 +32,8 @@ import { FiltersBar } from './components/FiltersBar';
 import { FiltersChips } from './components/FiltersChips';
 import { InvoiceTable } from './components/InvoiceTable';
 import { ColumnSettingsDialog } from './components/ColumnSettingsDialog';
-import {Scrollbar} from "@/components/scrollbar";
-import {InvoiceAnalytic} from "@/pages/dashboard/payments/list/components/InvoiceAnalytic";
-import {useTheme} from "@mui/material/styles";
-import { InvoiceStatus } from '../utils';
+import { usePaymentsAnalytics } from './hooks/usePaymentsAnalytics';
+import { InvoiceAnalyticsSection } from './components/InvoiceAnalyticsSection';
 
 type PaymentsProps = {
   invoices: InvoiceRow[];
@@ -113,7 +111,7 @@ export default function PaymentsList({
   const labelNumber = __('pages/payments.table.number');
   const labelProject = __('pages/payments.table.project');
   const labelDate = __('pages/payments.table.date');
-  const theme = useTheme();
+  const { analytics, formatAnalyticsAmount } = usePaymentsAnalytics(invoices);
   const preparedColumns = useMemo(() => {
     const labels = {
       status: labelStatus,
@@ -150,49 +148,6 @@ export default function PaymentsList({
 
   const filteredInvoices = useMemo(() => invoices, [invoices]);
   const title = isAdmin ? __('pages/payments.title_admin') : __('pages/payments.title');
-
-  const analytics = useMemo(() => {
-    const statuses: InvoiceStatus[] = ['paid', 'overpaid', 'partial', 'canceled', 'created'];
-    const initial = statuses.reduce(
-        (acc, key) => ({ ...acc, [key]: { count: 0, amount: 0 } }),
-        {} as Record<InvoiceStatus, { count: number; amount: number }>,
-    );
-
-    const parseAmount = (value: string | null | undefined) => {
-      const numeric = Number(value);
-      return Number.isFinite(numeric) ? numeric : 0;
-    };
-
-    const totals = invoices.reduce(
-        (acc, invoice) => {
-          const amount = parseAmount(invoice.amount);
-          acc.totalAmount += amount;
-          const status = invoice.status as InvoiceStatus;
-
-          if (status in acc.byStatus) {
-            acc.byStatus[status].count += 1;
-            acc.byStatus[status].amount += amount;
-          }
-
-          return acc;
-        },
-        { totalAmount: 0, byStatus: initial },
-    );
-
-    const totalCount = invoices.length;
-    const calcPercent = (count: number) => (totalCount === 0 ? 0 : (count / totalCount) * 100);
-
-    return {
-      total: { count: totalCount, amount: totals.totalAmount, percent: totalCount ? 100 : 0 },
-      ...statuses.reduce((acc, key) => {
-        const { count, amount } = totals.byStatus[key];
-        acc[key] = { count, amount, percent: calcPercent(count) };
-        return acc;
-      }, {} as Record<InvoiceStatus, { count: number; amount: number; percent: number }>),
-    };
-  }, [invoices]);
-
-  const formatAnalyticsAmount = useCallback((value: number) => Number(value.toFixed(2)), []);
 
   // ----------------------------- state -----------------------------
 
@@ -470,68 +425,7 @@ export default function PaymentsList({
             sx={{ mb: { xs: 3, md: 5 } }}
           />
 
-          <Card sx={{ mb: { xs: 3, md: 5 } }}>
-            <Scrollbar sx={{ minHeight: 108 }}>
-              <Stack
-                divider={<Divider orientation="vertical" flexItem sx={{ borderStyle: 'dashed' }} />}
-                sx={{ py: 2, flexDirection: 'row' }}
-              >
-                <InvoiceAnalytic
-                  title="Total"
-                  total={analytics.total.count}
-                  percent={analytics.total.percent}
-                  price={formatAnalyticsAmount(analytics.total.amount)}
-                  icon="solar:bill-list-bold-duotone"
-                  color={theme.palette.info.main}
-                />
-
-                <InvoiceAnalytic
-                  title="Paid"
-                  total={analytics.paid.count}
-                  percent={analytics.paid.percent}
-                  price={formatAnalyticsAmount(analytics.paid.amount)}
-                  icon="solar:file-check-bold-duotone"
-                  color={theme.palette.success.main}
-                />
-
-                <InvoiceAnalytic
-                  title="Overpaid"
-                  total={analytics.overpaid.count}
-                  percent={analytics.overpaid.percent}
-                  price={formatAnalyticsAmount(analytics.overpaid.amount)}
-                  icon="solar:wallet-money-bold"
-                  color={theme.palette.secondary.main}
-                />
-
-                <InvoiceAnalytic
-                  title="Partial"
-                  total={analytics.partial.count}
-                  percent={analytics.partial.percent}
-                  price={formatAnalyticsAmount(analytics.partial.amount)}
-                  icon="solar:pie-chart-2-bold"
-                  color={theme.palette.warning.main}
-                />
-
-                <InvoiceAnalytic
-                  title="Canceled"
-                  total={analytics.canceled.count}
-                  percent={analytics.canceled.percent}
-                  price={formatAnalyticsAmount(analytics.canceled.amount)}
-                  icon="solar:clock-circle-bold"
-                  color={theme.palette.error.main}
-                />
-
-                <InvoiceAnalytic
-                  title="created"
-                  total={analytics.created.count}
-                  percent={analytics.created.percent}
-                  price={formatAnalyticsAmount(analytics.created.amount)}
-                  icon="solar:sort-by-time-bold-duotone"
-                  color={theme.palette.warning.main}
-                />
-              </Stack>
-            </Scrollbar>
-          </Card>
+          <InvoiceAnalyticsSection analytics={analytics} formatAmount={formatAnalyticsAmount} />
 
           <Card>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
