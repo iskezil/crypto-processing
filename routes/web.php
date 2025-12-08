@@ -105,6 +105,9 @@ Route::middleware('auth')->group(function () {
   Route::get('/payments/export', [InvoiceController::class, 'export'])
     ->middleware('permission:PAYMENTS_VIEW')
     ->name('payments.export');
+  Route::get('/payments/{invoice:ulid}', [InvoiceController::class, 'show'])
+    ->middleware(['permission:PAYMENTS_VIEW', 'sync.lang:auth,navbar,navigation,pages/payments'])
+    ->name('payments.show');
   Route::post('/payments/{invoice}/cancel', [InvoiceController::class, 'cancel'])
     ->middleware(['permission:PAYMENTS_VIEW|PAYMENTS_ADMIN_VIEW'])
     ->name('payments.cancel');
@@ -115,6 +118,9 @@ Route::middleware('auth')->group(function () {
   Route::get('/admin/payments/export', [InvoiceController::class, 'adminExport'])
     ->middleware('permission:PAYMENTS_ADMIN_VIEW')
     ->name('payments.admin.export');
+  Route::get('/admin/payments/{invoice:ulid}', [InvoiceController::class, 'adminShow'])
+    ->middleware(['permission:PAYMENTS_ADMIN_VIEW', 'sync.lang:auth,navbar,navigation,pages/payments'])
+    ->name('payments.admin.show');
 
   Route::get('/admin/projects/moderation', [ProjectAdminController::class, 'index'])
     ->middleware(['permission:PROJECTS_MODERATION_VIEW', 'sync.lang:auth,navbar,navigation,pages/projects'])
