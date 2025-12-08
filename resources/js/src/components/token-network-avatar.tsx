@@ -7,12 +7,16 @@ type TokenNetworkAvatarProps = {
   tokenIcon?: string | null;
   networkIcon?: string | null;
   name?: string;
+  size?: number;
+  networkSize?: number;
 };
 
-export function TokenNetworkAvatar({ tokenIcon, networkIcon, name }: TokenNetworkAvatarProps) {
+export function TokenNetworkAvatar({ tokenIcon, networkIcon, name, size = 48, networkSize }: TokenNetworkAvatarProps) {
+  const smallSize = networkSize ?? Math.round(size * 0.42);
+
   return (
-    <Box sx={{ position: 'relative', width: 48, height: 48, flexShrink: 0 }}>
-      <Avatar src={tokenIcon || undefined} alt={name} sx={{ width: 48, height: 48 }}>
+    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <Avatar src={tokenIcon || undefined} alt={name} sx={{ width: size, height: size }}>
         {name?.[0] ?? ''}
       </Avatar>
 
@@ -21,11 +25,11 @@ export function TokenNetworkAvatar({ tokenIcon, networkIcon, name }: TokenNetwor
           src={networkIcon || undefined}
           alt=""
           sx={{
-            width: 20,
-            height: 20,
+            width: smallSize,
+            height: smallSize,
             position: 'absolute',
-            bottom: -4,
-            right: -4,
+            bottom: -(smallSize * 0.2),
+            right: -(smallSize * 0.2),
             border: '2px solid',
             borderColor: 'background.paper',
             boxShadow: (theme) => theme.customShadows?.z8,

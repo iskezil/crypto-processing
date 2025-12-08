@@ -4,199 +4,111 @@ import dayjs from 'dayjs';
 
 import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
 import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Checkbox from '@mui/material/Checkbox';
-import Button from '@mui/material/Button';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Tooltip from '@mui/material/Tooltip';
-import InputAdornment from '@mui/material/InputAdornment';
-import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-
 
 import { DashboardContent, DashboardLayout } from 'src/layouts/dashboard';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { useLang } from 'src/hooks/useLang';
 import { route } from 'src/routes/route';
 import { Iconify } from 'src/components/iconify';
-import { Label } from 'src/components/label';
 import { SearchNotFound } from 'src/components/search-not-found';
-import { TokenNetworkAvatar } from 'src/components/token-network-avatar';
-import {DateRangePicker} from "@mui/x-date-pickers-pro";
+
+import type { ColumnSetting, DateRangeValue, FilterState, InvoiceRow, Option } from '../types';
+import { buildColumns, toStatusOptions } from '../utils';
+import { FiltersBar } from './components/FiltersBar';
+import { FiltersChips } from './components/FiltersChips';
+import { InvoiceTable } from './components/InvoiceTable';
+import { ColumnSettingsDialog } from './components/ColumnSettingsDialog';
 
 // ----------------------------------------------------------------------
 
-type InvoiceCurrency = {
-  token?: string | null;
-  tokenIcon?: string | null;
-  code?: string | null;
-  network?: string | null;
-  networkIcon?: string | null;
-};
-
-type InvoiceProject = {
-  id?: number;
-  name?: string;
-};
-
-type InvoiceRow = {
-  id: number;
-  ulid: string;
-  number: string;
-  status: string;
-  amount: string;
-  amount_usd: string;
-  paid_amount: string;
-  service_fee: string | null;
-  transfer_fee: string | null;
-  credited_amount: string;
-  credited_amount_usd: string;
-  tx_ids: string[];
-  external_order_id?: string | null;
-  project?: InvoiceProject | null;
-  currency: InvoiceCurrency;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
-
-type FilterState = {
-  search: string;
-  project_id?: number | null;
-  currency?: string | null;
-  status?: string | null;
-  date_from?: string | null;
-  date_to?: string | null;
-};
-
-type Option = {
-  id: number | null;
-  name: string;
-  code?: string | null;
-  icon?: string | null;
-};
-
-type ColumnKey =
-    | 'status'
-    | 'currency'
-    | 'amount'
-    | 'amountUsd'
-    | 'paid'
-    | 'serviceFee'
-    | 'transferFee'
-    | 'credited'
-    | 'creditedUsd'
-    | 'tx'
-    | 'number'
-    | 'project'
-    | 'date';
-
-type ColumnSetting = {
-  key: ColumnKey;
-  label: string;
-  visible: boolean;
-};
-
-interface PaymentsProps {
+type PaymentsProps = {
   invoices: InvoiceRow[];
   filters: FilterState;
   projects: Option[];
   currencies: Option[];
   isAdmin: boolean;
-}
-
-// ----------------------------------------------------------------------
-
-const statusColor: Record<string, 'warning' | 'error' | 'success' | 'info'> = {
-  created: 'warning',
-  canceled: 'error',
-  paid: 'success',
-  partial: 'info',
-  overpaid: 'info',
 };
 
 // ----------------------------------------------------------------------
 
 export default function PaymentsList({ invoices, filters: serverFilters, projects, currencies, isAdmin }: PaymentsProps) {
   const { __ } = useLang();
+  const mountedRef = useRef(false);
 
-  const [filters, setFilters] = useState<FilterState>(serverFilters);
+  const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
+    if (Array.isArray(value)) return value.filter((item) => item !== null && item !== undefined) as T[];
+    if (value !== null && value !== undefined) return [value as T];
+    return [];
+  };
+
+  const [filters, setFilters] = useState<FilterState>({
+    search: serverFilters.search ?? '',
+    project_id: normalizeArray<number>(serverFilters.project_id),
+    currency: normalizeArray<string>(serverFilters.currency),
+    status: normalizeArray<string>(serverFilters.status),
+    date_from: serverFilters.date_from ?? null,
+    date_to: serverFilters.date_to ?? null,
+  });
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [columns, setColumns] = useState<ColumnSetting[]>([]);
   const [settingsColumns, setSettingsColumns] = useState<ColumnSetting[]>([]);
-  const [dragKey, setDragKey] = useState<ColumnKey | null>(null);
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
+  const [dateRange, setDateRange] = useState<DateRangeValue>([
     serverFilters.date_from ? dayjs(serverFilters.date_from) : null,
     serverFilters.date_to ? dayjs(serverFilters.date_to) : null,
   ]);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
-  const mountedRef = useRef(false);
 
   const routeName = isAdmin ? 'payments.admin' : 'payments.index';
   const exportRouteName = isAdmin ? 'payments.admin.export' : 'payments.export';
+  const detailRouteName = isAdmin ? 'payments.admin.show' : 'payments.show';
 
-  const statusOptions = useMemo(
-      () => [
-        { value: 'created', label: __('pages/payments.statuses.created') },
-        { value: 'canceled', label: __('pages/payments.statuses.canceled') },
-        { value: 'paid', label: __('pages/payments.statuses.paid') },
-        { value: 'partial', label: __('pages/payments.statuses.partial') },
-        { value: 'overpaid', label: __('pages/payments.statuses.overpaid') },
-      ],
-      [__]
-  );
-
-  const buildColumns = () => [
-    { key: 'status', label: __('pages/payments.table.status'), visible: true },
-    { key: 'currency', label: __('pages/payments.table.currency'), visible: true },
-    { key: 'amount', label: __('pages/payments.table.amount'), visible: true },
-    { key: 'amountUsd', label: __('pages/payments.table.amount_usd'), visible: true },
-    { key: 'paid', label: __('pages/payments.table.paid'), visible: true },
-    { key: 'serviceFee', label: __('pages/payments.table.service_fee'), visible: true },
-    { key: 'transferFee', label: __('pages/payments.table.transfer_fee'), visible: true },
-    { key: 'credited', label: __('pages/payments.table.credited'), visible: true },
-    { key: 'creditedUsd', label: __('pages/payments.table.credited_usd'), visible: true },
-    { key: 'tx', label: __('pages/payments.table.txids'), visible: true },
-    { key: 'number', label: __('pages/payments.table.number'), visible: true },
-    { key: 'project', label: __('pages/payments.table.project'), visible: true },
-    { key: 'date', label: __('pages/payments.table.date'), visible: true },
-  ];
+  const statusOptions = useMemo(() => toStatusOptions(__), [__]);
 
   useEffect(() => {
-    const prepared = buildColumns();
+    const labels = {
+      status: __('pages/payments.table.status'),
+      currency: __('pages/payments.table.currency'),
+      amount: __('pages/payments.table.amount'),
+      amountUsd: __('pages/payments.table.amount_usd'),
+      paid: __('pages/payments.table.paid'),
+      serviceFee: __('pages/payments.table.service_fee'),
+      transferFee: __('pages/payments.table.transfer_fee'),
+      credited: __('pages/payments.table.credited'),
+      creditedUsd: __('pages/payments.table.credited_usd'),
+      tx: __('pages/payments.table.txids'),
+      number: __('pages/payments.table.number'),
+      project: __('pages/payments.table.project'),
+      date: __('pages/payments.table.date'),
+    } as const;
+
+    const prepared = buildColumns(labels);
     setColumns(prepared);
     setSettingsColumns(prepared);
   }, [__]);
 
   useEffect(() => {
-    setFilters(serverFilters);
+    setFilters({
+      search: serverFilters.search ?? '',
+      project_id: normalizeArray<number>(serverFilters.project_id),
+      currency: normalizeArray<string>(serverFilters.currency),
+      status: normalizeArray<string>(serverFilters.status),
+      date_from: serverFilters.date_from ?? null,
+      date_to: serverFilters.date_to ?? null,
+    });
+
     setDateRange([
       serverFilters.date_from ? dayjs(serverFilters.date_from) : null,
       serverFilters.date_to ? dayjs(serverFilters.date_to) : null,
     ]);
   }, [serverFilters]);
 
-  const handleFilterChange = (key: keyof FilterState, value: string | number | null) => {
+  const handleFilterChange = (key: keyof FilterState, value: any) => {
     const nextFilters = { ...filters, [key]: value } as FilterState;
     setFilters(nextFilters);
 
@@ -217,19 +129,17 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
   const submitFilters = (values: FilterState) => {
     const query: Record<string, any> = {};
     if (values.search) query.search = values.search;
-    if (values.project_id) query.project_id = values.project_id;
-    if (values.currency) query.currency = values.currency;
-    if (values.status) query.status = values.status;
+    if (values.project_id.length) query.project_id = values.project_id;
+    if (values.currency.length) query.currency = values.currency;
+    if (values.status.length) query.status = values.status;
     if (values.date_from) query.date_from = values.date_from;
     if (values.date_to) query.date_to = values.date_to;
 
     router.get(route(routeName), query, { preserveScroll: true, preserveState: true, replace: true });
   };
 
-  // ⬇️ Новый handler для диапазона дат
-  const handleDateRangeChange = (newRange: [dayjs.Dayjs | null, dayjs.Dayjs | null]) => {
+  const handleDateRangeChange = (newRange: DateRangeValue) => {
     setDateRange(newRange);
-
     const [from, to] = newRange;
 
     const updated: FilterState = {
@@ -242,597 +152,130 @@ export default function PaymentsList({ invoices, filters: serverFilters, project
     submitFilters(updated);
   };
 
-  const handleResetFilters = () => {
-    const resetValues: FilterState = {
-      search: '',
-      project_id: null,
-      currency: null,
-      status: null,
-      date_from: null,
-      date_to: null,
-    };
-    setFilters(resetValues);
-    setDateRange([null, null]);
-    submitFilters(resetValues);
+  const handleClearFilter = (key: keyof FilterState, value?: string | number) => {
+    const updated: FilterState = { ...filters };
+
+    if (key === 'search') {
+      updated.search = '';
+    } else if (key === 'project_id' && typeof value !== 'undefined') {
+      updated.project_id = filters.project_id.filter((id) => id !== value);
+    } else if (key === 'currency' && typeof value === 'string') {
+      updated.currency = filters.currency.filter((item) => item !== value);
+    } else if (key === 'status' && typeof value === 'string') {
+      updated.status = filters.status.filter((item) => item !== value);
+    } else if (key === 'date_from' || key === 'date_to') {
+      updated.date_from = null;
+      updated.date_to = null;
+      setDateRange([null, null]);
+    }
+
+    setFilters(updated);
+    submitFilters(updated);
   };
 
   const handleExport = () => {
-    const query = new URLSearchParams();
+    const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        query.append(key, String(value));
+      if (Array.isArray(value)) {
+        value.forEach((item) => params.append(`${key}[]`, String(item)));
+      } else if (value) {
+        params.append(key, String(value));
       }
     });
+
     const url = route(exportRouteName);
-    window.location.href = query.toString() ? `${url}?${query.toString()}` : url;
+    window.location.href = params.toString() ? `${url}?${params.toString()}` : url;
   };
 
-  const toggleColumnVisibility = (key: ColumnKey) => {
-    setSettingsColumns((prev) => prev.map((column) => (column.key === key ? { ...column, visible: !column.visible } : column)));
-  };
-
-  const handleSettingsSave = () => {
-    const visibleColumns = settingsColumns.some((column) => column.visible);
-    if (!visibleColumns) {
-      return;
+  const handleSaveColumns = () => {
+    if (settingsColumns.some((column) => column.visible)) {
+      setColumns(settingsColumns);
     }
-    setColumns(settingsColumns);
-    setSettingsOpen(false);
   };
 
-  const startDrag = (key: ColumnKey) => setDragKey(key);
+  const filteredInvoices = useMemo(() => invoices, [invoices]);
+  const title = isAdmin ? __('pages/payments.title_admin') : __('pages/payments.title');
 
-  const handleDrop = (targetKey: ColumnKey) => {
-    if (!dragKey || dragKey === targetKey) return;
-
-    setSettingsColumns((prev) => {
-      const currentIndex = prev.findIndex((col) => col.key === dragKey);
-      const targetIndex = prev.findIndex((col) => col.key === targetKey);
-      if (currentIndex === -1 || targetIndex === -1) return prev;
-      const updated = [...prev];
-      const [moved] = updated.splice(currentIndex, 1);
-      updated.splice(targetIndex, 0, moved);
-      return updated;
-    });
-    setDragKey(null);
+  const handleSelectInvoice = (invoice: InvoiceRow) => {
+    router.get(route(detailRouteName, { invoice: invoice.ulid }));
   };
-
-  const formatAmount = (value: string | null, maximumFractionDigits = 8) => {
-    if (value == null) return '—';
-    return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits });
-  };
-
-  const formatTx = (value: string) => (value.length <= 8 ? value : `${value.slice(0, 4)}...${value.slice(-4)}`);
 
   const visibleColumns = columns.filter((column) => column.visible);
 
-  const filteredInvoices = useMemo(() => invoices, [invoices]);
-
-  const title = isAdmin ? __('pages/payments.title_admin') : __('pages/payments.title');
-
-  const detailsOpen = Boolean(selectedInvoice);
-
-  const handleSelectInvoice = (invoice: InvoiceRow) => {
-    setSelectedInvoice(invoice);
-  };
-
-  const handleCloseDetails = () => {
-    setSelectedInvoice(null);
-  };
-
-  const handleCancelInvoice = () => {
-    if (!selectedInvoice || selectedInvoice.status !== 'created') return;
-
-    router.post(
-        route('payments.cancel', selectedInvoice.id),
-        {},
-        {
-          preserveScroll: true,
-          preserveState: true,
-          onSuccess: () => setSelectedInvoice(null),
-        }
-    );
-  };
-
-  const detailStatusIcon: Record<string, string> = {
-    paid: 'solar:check-circle-bold',
-    canceled: 'solar:close-circle-bold',
-    created: 'solar:check-circle-bold',
-    partial: 'solar:check-circle-bold',
-    overpaid: 'solar:check-circle-bold',
-  };
-
   return (
-      <>
-        <title>{title}</title>
-        <DashboardLayout>
-          <DashboardContent maxWidth="xl">
-            <CustomBreadcrumbs
-                heading={title}
-                links={[
-                  { name: __('pages/payments.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
-                  { name: title },
-                ]}
-                action={
-                  <Stack direction="row" spacing={1}>
-                    <Chip
-                        color="primary"
-                        variant="soft"
-                        label={__('pages/payments.export')}
-                        onClick={handleExport}
-                        icon={<Iconify icon="solar:export-bold" width={18} />}
-                    />
-                    <Chip
-                        variant="outlined"
-                        label={__('pages/payments.settings')}
-                        onClick={() => setSettingsOpen(true)}
-                        icon={<Iconify icon="solar:settings-bold" width={18} />}
-                    />
-                  </Stack>
-                }
-                sx={{ mb: { xs: 3, md: 5 } }}
+    <>
+      <title>{title}</title>
+      <DashboardLayout>
+        <DashboardContent maxWidth="xl">
+          <CustomBreadcrumbs
+            heading={title}
+            links={[
+              { name: __('pages/payments.breadcrumbs.dashboard'), href: route('dashboard', undefined, false) },
+              { name: title },
+            ]}
+            action={
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  color="primary"
+                  variant="soft"
+                  label={__('pages/payments.export')}
+                  onClick={handleExport}
+                  icon={<Iconify icon="solar:export-bold" width={18} />}
+                />
+                <Chip
+                  variant="outlined"
+                  label={__('pages/payments.settings')}
+                  onClick={() => setSettingsOpen(true)}
+                  icon={<Iconify icon="solar:settings-bold" width={18} />}
+                />
+              </Stack>
+            }
+            sx={{ mb: { xs: 3, md: 5 } }}
+          />
+
+          <Card sx={{ p: 3 }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <FiltersBar
+                filters={filters}
+                projects={projects}
+                currencies={currencies}
+                statuses={statusOptions}
+                dateRange={dateRange}
+                onFilterChange={handleFilterChange}
+                onDateRangeChange={handleDateRangeChange}
+              />
+            </LocalizationProvider>
+
+            <Divider sx={{ my: 2 }} />
+
+            <FiltersChips
+              filters={filters}
+              projects={projects}
+              currencies={currencies}
+              statuses={statusOptions}
+              onClearFilter={handleClearFilter}
             />
 
-            <Card sx={{ p: 3 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                    flexWrap="wrap"
-                    divider={<Divider flexItem orientation="vertical" />}
-                >
-                  <TextField
-                      value={filters.search}
-                      onChange={(event) => handleFilterChange('search', event.target.value)}
-                      placeholder={__('pages/payments.search')}
-                      size="small"
-                      sx={{ minWidth: { xs: '100%', md: 220 } }}
-                      InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                              <Iconify icon="solar:magnifer-linear" width={20} />
-                            </InputAdornment>
-                        ),
-                      }}
-                  />
+            {filteredInvoices.length === 0 && (
+              <Box sx={{ pt: 3 }}>
+                <SearchNotFound sx={{ py: 5 }} query={filters.search} />
+              </Box>
+            )}
 
-                  <TextField
-                      select
-                      label={__('pages/payments.filters.project')}
-                      value={filters.project_id ?? ''}
-                      onChange={(event) => handleFilterChange('project_id', event.target.value ? Number(event.target.value) : null)}
-                      size="small"
-                      sx={{ minWidth: { xs: '100%', md: 150 } }}
-                  >
-                    <MenuItem value="">{__('pages/payments.filters.all')}</MenuItem>
-                    {projects.map((project) => (
-                        <MenuItem key={project.id ?? project.name} value={project.id ?? ''}>
-                          {project.name}
-                        </MenuItem>
-                    ))}
-                  </TextField>
+            {visibleColumns.length > 0 && (
+              <InvoiceTable columns={columns} invoices={filteredInvoices} onRowClick={handleSelectInvoice} />
+            )}
+          </Card>
+        </DashboardContent>
+      </DashboardLayout>
 
-                  <TextField
-                      select
-                      label={__('pages/payments.filters.currency')}
-                      value={filters.currency ?? ''}
-                      onChange={(event) => handleFilterChange('currency', event.target.value || null)}
-                      size="small"
-                      sx={{ minWidth: { xs: '100%', md: 170 } }}
-                      SelectProps={{
-                        renderValue: (value) => {
-                          if (!value) return __('pages/payments.filters.all');
-                          const selected = currencies.find((currency) => currency.code === value || currency.name === value);
-                          if (!selected) return value;
-                          return (
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                {selected.icon && <Avatar src={selected.icon} sx={{ width: 24, height: 24 }} />}
-                                <span>{selected.code ? `${selected.code} — ${selected.name}` : selected.name}</span>
-                              </Stack>
-                          );
-                        },
-                      }}
-                  >
-                    <MenuItem value="">{__('pages/payments.filters.all')}</MenuItem>
-                    {currencies.map((currency) => (
-                        <MenuItem key={`${currency.code}-${currency.name}`} value={currency.code ?? currency.name}>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            {currency.icon && <Avatar src={currency.icon} sx={{ width: 24, height: 24 }} />}
-                            <span>{currency.code ? `${currency.code} — ${currency.name}` : currency.name}</span>
-                          </Stack>
-                        </MenuItem>
-                    ))}
-                  </TextField>
-
-                  <TextField
-                      select
-                      label={__('pages/payments.filters.status')}
-                      value={filters.status ?? ''}
-                      onChange={(event) => handleFilterChange('status', event.target.value || null)}
-                      size="small"
-                      sx={{ minWidth: { xs: '100%', md: 170 } }}
-                  >
-                    <MenuItem value="">{__('pages/payments.filters.all')}</MenuItem>
-                    {statusOptions.map((status) => (
-                        <MenuItem key={status.value} value={status.value}>
-                          {status.label}
-                        </MenuItem>
-                    ))}
-                  </TextField>
-                  <DateRangePicker
-                      value={dateRange}
-                      onChange={handleDateRangeChange}
-                      calendars={2}
-                      slotProps={{
-                        textField: {
-                          size: 'small',
-                          sx: { minWidth: { xs: '100%', md: 260 } },
-                          label: `${__('pages/payments.filters.date_from')} – ${__('pages/payments.filters.date_to')}`,
-                        },
-                      }}
-                  />
-
-                  <Button variant="outlined" color="inherit" onClick={handleResetFilters} size="small" sx={{ minWidth: 120 }}>
-                    {__('pages/payments.filters.clear')}
-                  </Button>
-                </Stack>
-              </LocalizationProvider>
-
-              {/* ...всё, что ниже, оставил без изменений */}
-              <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-                <Table sx={{ minWidth: 1200 }}>
-                  <TableHead>
-                    <TableRow>
-                      {visibleColumns.map((column) => (
-                          <TableCell key={column.key} sx={{ whiteSpace: 'nowrap' }}>
-                            {column.label}
-                          </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredInvoices.map((invoice) => (
-                        <TableRow
-                            key={invoice.id}
-                            hover
-                            onClick={() => handleSelectInvoice(invoice)}
-                            sx={{ cursor: 'pointer' }}
-                        >
-                          {visibleColumns.map((column) => {
-                            switch (column.key) {
-                              case 'status':
-                                return (
-                                    <TableCell key={column.key}>
-                                      <Label color={statusColor[invoice.status] ?? 'info'}>
-                                        {__(`pages/payments.statuses.${invoice.status}`)}
-                                      </Label>
-                                    </TableCell>
-                                );
-                              case 'currency':
-                                return (
-                                    <TableCell key={column.key}>
-                                      <Stack direction="row" spacing={1} alignItems="center">
-                                        <TokenNetworkAvatar
-                                            tokenIcon={invoice.currency.tokenIcon}
-                                            networkIcon={invoice.currency.networkIcon}
-                                            name={invoice.currency.token ?? undefined}
-                                        />
-                                        <Stack spacing={0.25}>
-                                          <Typography variant="body2">{invoice.currency.token}</Typography>
-                                          <Typography variant="caption" color="text.secondary">
-                                            {invoice.currency.network}
-                                          </Typography>
-                                        </Stack>
-                                      </Stack>
-                                    </TableCell>
-                                );
-                              case 'amount':
-                                return (
-                                    <TableCell key={column.key}>
-                                      {formatAmount(invoice.amount)} {invoice.currency.token}
-                                    </TableCell>
-                                );
-                              case 'amountUsd':
-                                return <TableCell key={column.key}>${formatAmount(invoice.amount_usd)}</TableCell>;
-                              case 'paid':
-                                return <TableCell key={column.key}>{formatAmount(invoice.paid_amount)}</TableCell>;
-                              case 'serviceFee':
-                                return <TableCell key={column.key}>{formatAmount(invoice.service_fee)}</TableCell>;
-                              case 'transferFee':
-                                return <TableCell key={column.key}>{formatAmount(invoice.transfer_fee)}</TableCell>;
-                              case 'credited':
-                                return <TableCell key={column.key}>{formatAmount(invoice.credited_amount)}</TableCell>;
-                              case 'creditedUsd':
-                                return <TableCell key={column.key}>${formatAmount(invoice.credited_amount_usd)}</TableCell>;
-                              case 'tx':
-                                return (
-                                    <TableCell key={column.key}>
-                                      <Stack spacing={0.5}>
-                                        {invoice.tx_ids.map((tx) => (
-                                            <Tooltip key={tx} title={tx} placement="top">
-                                              <Typography variant="body2" component="span">
-                                                {formatTx(tx)}
-                                              </Typography>
-                                            </Tooltip>
-                                        ))}
-                                        {invoice.tx_ids.length === 0 && '—'}
-                                      </Stack>
-                                    </TableCell>
-                                );
-                              case 'number':
-                                return <TableCell key={column.key}>{invoice.number}</TableCell>;
-                              case 'project':
-                                return <TableCell key={column.key}>{invoice.project?.name ?? '—'}</TableCell>;
-                              case 'date':
-                                return <TableCell key={column.key}>{invoice.created_at}</TableCell>;
-                              default:
-                                return null;
-                            }
-                          })}
-                        </TableRow>
-                    ))}
-
-                    {filteredInvoices.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={visibleColumns.length}>
-                            <Stack alignItems="center" sx={{ py: 4 }}>
-                              <SearchNotFound query={filters.search} />
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Card>
-          </DashboardContent>
-        </DashboardLayout>
-
-      <Dialog open={detailsOpen} onClose={handleCloseDetails} maxWidth="lg" fullWidth>
-        <DialogTitle>{__('pages/payments.details.title')}</DialogTitle>
-        <DialogContent>
-          {selectedInvoice && (
-            <Grid container spacing={3} sx={{ pt: 1 }}>
-              <Grid item xs={12} md={4}>
-                <Box
-                  sx={{
-                    bgcolor: 'background.neutral',
-                    borderRadius: 2,
-                    p: 3,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1.5,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedInvoice.created_at ?? '—'}
-                  </Typography>
-
-                  <Typography variant="h3" component="div">
-                    {formatAmount(selectedInvoice.amount)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedInvoice.currency.token}
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      width: 104,
-                      height: 104,
-                      borderRadius: '50%',
-                      bgcolor: `${statusColor[selectedInvoice.status] ?? 'info'}.lighter`,
-                      color: `${statusColor[selectedInvoice.status] ?? 'info'}.main`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Iconify width={56} icon={detailStatusIcon[selectedInvoice.status] ?? 'solar:check-circle-bold'} />
-                  </Box>
-
-                  <Typography variant="subtitle1" color={statusColor[selectedInvoice.status] ?? 'info'}>
-                    {__(`pages/payments.statuses.${selectedInvoice.status}`)}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary">
-                    ${formatAmount(selectedInvoice.amount_usd, 2)} USD
-                  </Typography>
-
-                  {selectedInvoice.status === 'created' && (
-                    <Button variant="outlined" color="error" onClick={handleCancelInvoice} fullWidth>
-                      {__('pages/payments.details.cancel')}
-                    </Button>
-                  )}
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} md={8}>
-                <Stack spacing={2.5}>
-                  <Grid container spacing={2}>
-                    {[
-                      {
-                        label: __('pages/payments.details.link'),
-                        value: selectedInvoice.number,
-                      },
-                      {
-                        label: __('pages/payments.details.status'),
-                        value: (
-                          <Label color={statusColor[selectedInvoice.status] ?? 'info'}>
-                            {__(`pages/payments.statuses.${selectedInvoice.status}`)}
-                          </Label>
-                        ),
-                      },
-                      {
-                        label: __('pages/payments.details.type'),
-                        value: __('pages/payments.details.income'),
-                      },
-                      {
-                        label: __('pages/payments.details.date'),
-                        value: selectedInvoice.created_at ?? '—',
-                      },
-                      {
-                        label: __('pages/payments.details.completed_at'),
-                        value: selectedInvoice.updated_at ?? '—',
-                      },
-                      {
-                        label: __('pages/payments.details.order_id'),
-                        value: selectedInvoice.external_order_id ?? '—',
-                      },
-                      {
-                        label: __('pages/payments.details.project'),
-                        value: selectedInvoice.project?.name ?? '—',
-                      },
-                    ].map((item) => (
-                      <Grid key={item.label} item xs={12} sm={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.label}
-                        </Typography>
-                        <Typography variant="subtitle1">{item.value}</Typography>
-                      </Grid>
-                    ))}
-                  </Grid>
-
-                  <Divider />
-
-                  <Grid container spacing={2} alignItems="center">
-                    <Grid item>
-                      <Typography variant="caption" color="text.secondary">
-                        {__('pages/payments.details.currency')}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <TokenNetworkAvatar
-                          tokenIcon={selectedInvoice.currency.tokenIcon}
-                          networkIcon={selectedInvoice.currency.networkIcon}
-                          name={selectedInvoice.currency.token ?? undefined}
-                        />
-                        <Stack spacing={0.25}>
-                          <Typography variant="subtitle1">{selectedInvoice.currency.token}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {selectedInvoice.currency.code}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </Grid>
-
-                    <Grid item>
-                      <Typography variant="caption" color="text.secondary">
-                        {__('pages/payments.details.network')}
-                      </Typography>
-                      <Typography variant="subtitle1">{selectedInvoice.currency.network ?? '—'}</Typography>
-                    </Grid>
-                  </Grid>
-
-                  <Divider />
-
-                  <Grid container spacing={2}>
-                    {[
-                      {
-                        label: __('pages/payments.details.amount'),
-                        value: `${formatAmount(selectedInvoice.amount)} ${selectedInvoice.currency.token}`,
-                      },
-                      {
-                        label: __('pages/payments.details.amount_usd'),
-                        value: `$${formatAmount(selectedInvoice.amount_usd, 2)}`,
-                      },
-                      {
-                        label: __('pages/payments.details.paid'),
-                        value: `${formatAmount(selectedInvoice.paid_amount)} ${selectedInvoice.currency.token}`,
-                      },
-                      {
-                        label: __('pages/payments.details.credited'),
-                        value: `${formatAmount(selectedInvoice.credited_amount)} ${selectedInvoice.currency.token}`,
-                      },
-                      {
-                        label: __('pages/payments.details.service_fee'),
-                        value: `${formatAmount(selectedInvoice.service_fee)} ${selectedInvoice.currency.token}`,
-                      },
-                      {
-                        label: __('pages/payments.details.transfer_fee'),
-                        value: `${formatAmount(selectedInvoice.transfer_fee)} ${selectedInvoice.currency.token}`,
-                      },
-                    ].map((item) => (
-                      <Grid key={item.label} item xs={12} sm={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.label}
-                        </Typography>
-                        <Typography variant="subtitle1">{item.value}</Typography>
-                      </Grid>
-                    ))}
-                  </Grid>
-
-                  <Divider />
-
-                  <Stack spacing={1}>
-                    <Typography variant="caption" color="text.secondary">
-                      {__('pages/payments.details.txids')}
-                    </Typography>
-                    <Stack spacing={0.5}>
-                      {selectedInvoice.tx_ids.length === 0 && (
-                        <Typography variant="body2" color="text.secondary">
-                          —
-                        </Typography>
-                      )}
-                      {selectedInvoice.tx_ids.map((tx) => (
-                        <Tooltip key={tx} title={tx} placement="top-start">
-                          <Typography variant="body2" component="span">
-                            {formatTx(tx)}
-                          </Typography>
-                        </Tooltip>
-                      ))}
-                    </Stack>
-                  </Stack>
-                </Stack>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDetails}>{__('pages/payments.details.close')}</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>{__('pages/payments.settings')}</DialogTitle>
-        <DialogContent>
-          <List dense>
-            {settingsColumns.map((column) => (
-              <ListItem
-                key={column.key}
-                disableGutters
-                draggable
-                onDragStart={() => startDrag(column.key)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => handleDrop(column.key)}
-                secondaryAction={
-                  <Checkbox
-                    edge="end"
-                    checked={column.visible}
-                    onChange={() => toggleColumnVisibility(column.key)}
-                    inputProps={{ 'aria-label': column.label }}
-                  />
-                }
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <Iconify icon="solar:menu-dots-bold" />
-                </ListItemIcon>
-                <ListItemText primary={column.label} />
-              </ListItem>
-            ))}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setSettingsOpen(false)}>
-            {__('pages/payments.close')}
-          </Button>
-          <Button variant="contained" onClick={handleSettingsSave}>
-            {__('pages/payments.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ColumnSettingsDialog
+        open={settingsOpen}
+        columns={settingsColumns}
+        onChange={setSettingsColumns}
+        onClose={() => setSettingsOpen(false)}
+        onSave={handleSaveColumns}
+      />
     </>
   );
 }
