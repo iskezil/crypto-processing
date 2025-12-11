@@ -1,9 +1,9 @@
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from '@inertiajs/core';
+import type { LangObject } from 'src/types/inertia';
 
 type Replaces = Record<string, string | number>;
-type LangValue = string | { [key: string]: string | LangValue };
-type LangObject = Record<string, LangValue>;
+type LangValue = LangObject[string];
 
 export function useLang() {
   const { lang } = usePage<PageProps>().props;
@@ -36,11 +36,15 @@ export function useLang() {
 
   function getValueFromKey(key: string): string | undefined {
     const segments = key.split('.');
-    let current: any = lang;
+    let current: LangValue | undefined = lang;
 
     for (const segment of segments) {
-      if (typeof current !== 'object' || current === null) return undefined;
-      current = current[segment];
+      if (typeof current !== 'object' || current === null || !(segment in current)) {
+        return undefined;
+      }
+
+      const nextValue: LangValue | undefined = (current as Record<string, LangValue>)[segment];
+      current = typeof nextValue === 'string' || typeof nextValue === 'object' ? nextValue : undefined;
     }
 
     return typeof current === 'string' ? current : undefined;

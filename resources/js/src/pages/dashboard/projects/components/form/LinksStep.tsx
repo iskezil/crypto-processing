@@ -31,7 +31,7 @@ export function LinksStep({
   const { __ } = useLang();
   const platformPlaceholder = __('pages/projects.links_section.platform_placeholder');
 
-  const validateLogo = async (file: File): Promise<FileError | null> => {
+  const validateLogo = (file: File): FileError | null => {
     if (!['image/png', 'image/jpeg'].includes(file.type)) {
       return { code: 'file-invalid-type', message: __('pages/projects.validation.logo_type') };
     }
@@ -40,32 +40,7 @@ export function LinksStep({
       return { code: 'file-too-large', message: __('pages/projects.validation.logo_size') };
     }
 
-    const objectUrl = URL.createObjectURL(file);
-
-    return new Promise<FileError | null>((resolve) => {
-      const image = new Image();
-
-      image.onload = () => {
-        URL.revokeObjectURL(objectUrl);
-
-        const ratio = image.width / image.height;
-        const isValidRatio = Math.abs(ratio - 3) < 0.01;
-
-        if (!isValidRatio) {
-          resolve({ code: 'invalid-dimensions', message: __('pages/projects.validation.logo_ratio') });
-          return;
-        }
-
-        resolve(null);
-      };
-
-      image.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        resolve({ code: 'file-invalid', message: __('pages/projects.validation.logo_type') });
-      };
-
-      image.src = objectUrl;
-    });
+    return null;
   };
 
   return (

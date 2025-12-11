@@ -1,3 +1,4 @@
+import type { ButtonBaseProps } from '@mui/material/ButtonBase';
 import type { NavItemDataProps, NavItemOptionsProps } from '../types';
 
 import { cloneElement } from 'react';
@@ -10,7 +11,11 @@ type CreateNavItemReturn = {
   subItem: boolean;
   rootItem: boolean;
   subDeepItem: boolean;
-  baseProps: Record<string, any>;
+  baseProps: Partial<ButtonBaseProps> & {
+    href?: string;
+    target?: string;
+    rel?: string;
+  };
   renderIcon: React.ReactNode;
   renderInfo: React.ReactNode;
 };
@@ -35,7 +40,8 @@ export function createNavItem({
     ? { href: path, target: '_blank', rel: 'noopener noreferrer' }
     : { component: RouterLink, href: path };
 
-  const baseProps = hasChild && !enabledRootRedirect ? { component: 'div' } : linkProps;
+  const baseProps: CreateNavItemReturn['baseProps'] =
+    hasChild && !enabledRootRedirect ? { component: 'div' } : linkProps;
 
   /**
    * Render @icon

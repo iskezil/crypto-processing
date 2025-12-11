@@ -1,6 +1,6 @@
 import { varAlpha } from 'minimal-shared/utils';
 
-import { styled } from '@mui/material/styles';
+import { styled, type Theme } from '@mui/material/styles';
 
 import { editorClasses } from './classes';
 
@@ -8,8 +8,16 @@ import { editorClasses } from './classes';
 
 const MARGIN = '0.75em';
 
+const getScrollbarStyles = (theme: Theme) => {
+  if ('scrollbarStyles' in theme.mixins && typeof (theme.mixins as any).scrollbarStyles === 'function') {
+    return (theme.mixins as { scrollbarStyles: (inputTheme: Theme) => Record<string, unknown> }).scrollbarStyles(theme);
+  }
+
+  return {};
+};
+
 export const EditorRoot = styled('div')(({ theme }) => ({
-  ...theme.mixins.scrollbarStyles(theme),
+  ...getScrollbarStyles(theme),
   minHeight: 240,
   display: 'flex',
   flexDirection: 'column',

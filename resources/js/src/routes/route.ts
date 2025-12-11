@@ -1,17 +1,7 @@
-import {
-  route as ziggyRoute,
-  type Config as ZiggyConfig,
-} from 'ziggy-js';
+import { route as ziggyRoute, type Config as ZiggyConfig } from 'ziggy-js';
 import { Ziggy, type RouteName } from 'src/ziggy';
 
-type RouteParamsInput =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Record<string, any>
-  | Array<string | number | boolean | null | undefined>;
+type RouteParamsInput = Parameters<typeof ziggyRoute>[1] | Record<string, unknown> | Array<Parameters<typeof ziggyRoute>[1]>;
 
 export function route(
   name: RouteName,
@@ -22,7 +12,7 @@ export function route(
 
   if (typeof window !== 'undefined') {
     config.url = window.location.origin;
-    (config as any).location = new URL(window.location.href);
+    config.location = new URL(window.location.href);
   }
 
   if (!config.routes[name]) {
@@ -30,9 +20,11 @@ export function route(
     return '#';
   }
 
-  const result = ziggyRoute(name as any, params as any, absolute, config as any);
+  const normalizedParams = params as Parameters<typeof ziggyRoute>[1];
 
-  return (result as unknown as { toString(): string }).toString();
+  const result = ziggyRoute(name, normalizedParams, absolute, config);
+
+  return result.toString();
 }
 
 export default route;

@@ -67,8 +67,17 @@ const exportColumnKeyMap: Record<ColumnKey, string> = {
   date: 'created_at',
 };
 
-const toQueryParams = (values: FilterState) => {
-  const query: Record<string, any> = {};
+type PaymentsQueryParams = Partial<{
+  search: string;
+  project_id: number[];
+  currency: string[];
+  status: string[];
+  date_from: string;
+  date_to: string;
+}>;
+
+const toQueryParams = (values: FilterState): PaymentsQueryParams => {
+  const query: PaymentsQueryParams = {};
   if (values.search) query.search = values.search;
   if (values.project_id.length) query.project_id = values.project_id;
   if (values.currency.length) query.currency = values.currency;
@@ -269,7 +278,7 @@ export default function PaymentsList({
   );
 
   const handleFilterChange = useCallback(
-    (key: keyof FilterState, value: any) => {
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
       setFilters((prev) => {
         const next = { ...prev, [key]: value } as FilterState;
         if (key !== 'search') submitFilters(next);

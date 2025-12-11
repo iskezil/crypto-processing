@@ -80,8 +80,14 @@ export function DashboardLayout({
   const isNavVertical = isNavMini || settings.state.navLayout === 'vertical';
 
   const canDisplayItemByRole = (allowedRoles: NavItemProps['allowedRoles']): boolean => {
+    if (!allowedRoles) return true;
+
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
-    return !roles.some((role) => (user.roles ?? []).includes(role));
+    const userRoles = (user?.roles ?? []).filter((value): value is string => Boolean(value));
+
+    if (!userRoles.length) return true;
+
+    return !roles.some((role) => userRoles.includes(role));
   };
 
   const renderHeader = () => {

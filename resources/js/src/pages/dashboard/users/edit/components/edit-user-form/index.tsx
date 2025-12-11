@@ -52,7 +52,7 @@ export function EditUserForm({ roles, currentUser }: Props) {
   const { __ } = useLang();
   const { props } = usePage<PageProps>();
   const csrfToken = props.csrf_token;
-  const authUserId = (props.auth.user as any)?.id as number | undefined;
+  const authUserId = props.auth.user?.id;
   const { can } = useAuthz();
   const canDelete = can('USERS_DELETE');
   const [openDelete, setOpenDelete] = useState(false);

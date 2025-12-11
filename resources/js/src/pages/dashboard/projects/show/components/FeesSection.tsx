@@ -17,7 +17,7 @@ import { projectAccent } from '../../theme';
 import type { ProjectFormValues } from '../../create/schema';
 
 type FeesSectionProps = {
-  __: (key: string, options?: Record<string, unknown>) => string;
+  __: (key: string, replaces?: Record<string, string | number> | string) => string;
   integrationAvailable: boolean;
   serviceFee: number | null | undefined;
 };

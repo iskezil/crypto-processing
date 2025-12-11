@@ -19,7 +19,7 @@ import { FormRow } from '../../components/form';
 import Divider from "@mui/material/Divider";
 
 type IntegrationSectionProps = {
-  __: (key: string, options?: Record<string, unknown>) => string;
+  __: (key: string, replaces?: Record<string, string | number> | string) => string;
   integrationAvailable: boolean;
   activeApiKey?: ProjectApiKey;
   apiKeyStatusLabels: Record<ProjectApiKey['status'], string>;

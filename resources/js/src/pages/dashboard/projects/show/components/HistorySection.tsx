@@ -16,7 +16,7 @@ import { Iconify } from 'src/components/iconify';
 import type { ModerationLog, ProjectApiKey } from '../../types';
 
 type HistorySectionProps = {
-  __: (key: string, options?: Record<string, unknown>) => string;
+  __: (key: string, replaces?: Record<string, string | number> | string) => string;
   moderationLogs: ModerationLog[];
   statusColors: Record<string, 'warning' | 'success' | 'error'>;
 };
@@ -66,7 +66,7 @@ export function HistorySection({ __, moderationLogs, statusColors }: HistorySect
 }
 
 type RevokedKeysAccordionProps = {
-  __: (key: string, options?: Record<string, unknown>) => string;
+  __: (key: string, replaces?: Record<string, string | number> | string) => string;
   revokedKeys: ProjectApiKey[];
 };
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { isTelegramHandle, isValidHttpUrl } from '../utils';
 
-type TranslateFn = (key: string, params?: Record<string, any>) => string;
+type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
 
 const requiredMessage = (translate: TranslateFn, attribute: string) => {
   const message = translate('validation.required', { attribute });
@@ -28,18 +28,13 @@ export const projectSchema = (translate: TranslateFn, options: SchemaOptions = {
     description: z
       .string({ required_error: requiredMessage(translate, translate('validation.attributes.description')) })
       .min(1, requiredMessage(translate, translate('validation.attributes.description'))),
-    platform: z
-      .enum(['website', 'telegram_bot', 'vk_bot', 'other'])
-      .or(z.literal(''))
-      .refine((value) => value !== '', {
-        message: translate('pages/projects.validation.platform_required'),
-      }),
+    platform: z.enum(['website', 'telegram_bot', 'vk_bot', 'other']),
     project_url: z
       .string({ required_error: requiredMessage(translate, translate('pages/projects.form.project_url')) })
       .min(1, requiredMessage(translate, translate('pages/projects.form.project_url'))),
-    success_url: z.string().optional().default(''),
-    fail_url: z.string().optional().default(''),
-    notify_url: z.string().optional().default(''),
+    success_url: z.string().default(''),
+    fail_url: z.string().default(''),
+    notify_url: z.string().default(''),
     logo: z.union([z.instanceof(File), z.string(), z.null()]).optional().nullable(),
     token_network_ids: z.array(z.number()).min(1, translate('pages/projects.validation.tokens')),
     accept: z.literal(true, { errorMap: () => ({ message: translate('pages/projects.validation.accept') }) }),

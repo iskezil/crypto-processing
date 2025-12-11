@@ -23,7 +23,13 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
       auth: { user },
     },
   } = usePage<PageProps>();
-  const avatarUrl = `${CONFIG.assetsDir}/${user.avatar}`;
+  if (!user) {
+    return null;
+  }
+
+  const avatarUrl = `${CONFIG.assetsDir}/${user.avatar ?? ''}`;
+  const displayName = user.name ?? '';
+  const initials = displayName ? displayName.charAt(0).toUpperCase() : '';
 
   return (
     <Box
@@ -32,8 +38,8 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
         <Box sx={{ position: 'relative' }}>
-          <Avatar src={avatarUrl} alt={user.name} sx={{ width: 48, height: 48 }}>
-            {user.name.charAt(0).toUpperCase()}
+          <Avatar src={avatarUrl} alt={displayName} sx={{ width: 48, height: 48 }}>
+            {initials}
           </Avatar>
 
           <Label
@@ -58,7 +64,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
             noWrap
             sx={{ mb: 1, color: 'var(--layout-nav-text-primary-color)' }}
           >
-            {user.name}
+            {displayName}
           </Typography>
 
           <Typography

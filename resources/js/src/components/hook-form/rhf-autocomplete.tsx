@@ -15,7 +15,7 @@ type FreeSolo = boolean | undefined;
 type ExcludedProps = 'renderInput';
 
 export type AutocompleteBaseProps = Omit<
-  AutocompleteProps<any, Multiple, DisableClearable, FreeSolo>,
+  AutocompleteProps<unknown, Multiple, DisableClearable, FreeSolo>,
   ExcludedProps
 >;
 

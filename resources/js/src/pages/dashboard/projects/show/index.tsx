@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, type FieldErrors } from 'react-hook-form';
+import { useForm, type FieldErrors, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 
@@ -144,14 +144,18 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   }, [__, integrationAvailable, showModerationHistory]);
 
   const Schema = useMemo(() => projectSchema(__, { requireServiceFee: isAdminView }), [__, isAdminView]);
+  const normalizedTokenNetworks = useMemo(
+    () => tokenNetworks.map((network) => ({ ...network, stable_coin: !!network.stable_coin })),
+    [tokenNetworks],
+  );
 
-  const methods = useForm<ProjectFormValues>({
-    resolver: zodResolver(Schema),
+  const methods = useForm<ProjectFormValues, unknown, ProjectFormValues>({
+    resolver: zodResolver(Schema) as unknown as Resolver<ProjectFormValues>,
     defaultValues: {
       name: project.name || '',
       activity_type: project.activity_type || '',
       description: project.description || '',
-      platform: (project.platform as PlatformValue | '') || '',
+      platform: (project.platform as PlatformValue | undefined) ?? 'website',
       project_url: project.project_url || '',
       success_url: project.success_url || '',
       fail_url: project.fail_url || '',
@@ -406,7 +410,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
   };
 
   const onSubmit = handleSubmit((data) => {
-    const selectedTokenNetworkIds = data.token_network_ids.map((id) => Number(id));
+    const selectedTokenNetworkIds = data.token_network_ids.map((id: number | string) => Number(id));
 
     const logoChanged = data.logo instanceof File ? true : (data.logo || '') !== (project.logo || '');
     const formServiceFee = data.service_fee !== '' ? Number(data.service_fee) : null;
@@ -585,7 +589,7 @@ export default function ProjectShow({ project, tokenNetworks, breadcrumbs, viewM
                     {currentTab === 'currencies' && (
                         <CurrenciesStep
                             title={__('pages/projects.steps.currencies')}
-                            tokenNetworks={tokenNetworks}
+                            tokenNetworks={normalizedTokenNetworks}
                             control={methods.control}
                             acceptLabel={__('pages/projects.form.accept_terms')}
                         />

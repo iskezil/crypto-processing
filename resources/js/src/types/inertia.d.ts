@@ -10,6 +10,7 @@ declare module '@inertiajs/core' {
     lang: LangObject;
     auth: {
       user?: {
+        id?: number;
         name?: string;
         email?: string;
         avatar?: string;

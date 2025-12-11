@@ -125,7 +125,7 @@ const MuiPickerPopper: Components<Theme>['MuiPickerPopper'] = {
   styleOverrides: {
     paper: ({ theme }) => ({
       boxShadow: theme.vars.customShadows.dropdown,
-      borderRadius: theme.shape.borderRadius * 1.5,
+      borderRadius: Number(theme.shape.borderRadius) * 1.5,
     }),
   },
 };

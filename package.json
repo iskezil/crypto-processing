@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build",
+        "typecheck": "tsc -p tsconfig.json"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.4",
@@ -17,6 +18,7 @@
         "prettier": "^3.5.3",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
+        "typescript": "^5.9.3",
         "vite": "^6.3.5",
         "vite-plugin-checker": "^0.9.3"
     },

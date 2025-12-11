@@ -45,7 +45,7 @@ function useProgressBar() {
           NProgress.start();
         }
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
+        if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
           console.error('Navigation progress error:', error);
         }
         NProgress.done();
@@ -70,9 +70,10 @@ function useProgressBar() {
     // Patches a history method to intercept client-side navigations.
     const patchHistoryMethod = (method: 'pushState' | 'replaceState') => {
       const originalMethod = window.history[method];
+      type HistoryMethodArgs = Parameters<typeof originalMethod>;
 
       window.history[method] = new Proxy(originalMethod, {
-        apply: (target, thisArg, args: [data: any, unused: string, url?: string | URL | null]) => {
+        apply: (target, thisArg, args: HistoryMethodArgs) => {
           const newUrl = args[2];
           if (typeof newUrl === 'string') {
             handleNavigation(new URL(newUrl, window.location.origin).href);

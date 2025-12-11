@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
 
@@ -47,20 +47,25 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
 
   const Schema = useMemo(() => projectSchema(__), [__]);
 
-  const methods = useForm<ProjectFormValues>({
-    resolver: zodResolver(Schema),
+  const normalizedTokenNetworks = useMemo(
+    () => tokenNetworks.map((network) => ({ ...network, stable_coin: !!network.stable_coin })),
+    [tokenNetworks],
+  );
+
+  const methods = useForm<ProjectFormValues, unknown, ProjectFormValues>({
+    resolver: zodResolver(Schema) as unknown as Resolver<ProjectFormValues>,
     defaultValues: {
       name: '',
       activity_type: '',
       description: '',
-      platform: '' as ProjectFormValues['platform'],
+      platform: 'website',
       project_url: '',
       success_url: '',
       fail_url: '',
       notify_url: '',
       logo: null,
       token_network_ids: [],
-      accept: false,
+      accept: true,
       side_commission: 'client',
       side_commission_cc: 'client',
       auto_confirm_partial_by_amount: '',
@@ -79,8 +84,8 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
     formState: { isSubmitting },
   } = methods;
 
-  const platformValue = watch('platform') as PlatformValue | '';
-  const platform = platformValue || 'website';
+  const platformValue = watch('platform') as PlatformValue;
+  const platform = platformValue;
   const projectUrl = watch('project_url');
   const projectUrlLabelKey = platformValue ? platformLabels[platform] : 'pages/projects.form.project_url';
   const projectUrlLabel = __(projectUrlLabelKey);
@@ -120,23 +125,28 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
   }, [getValues, platformValue, projectUrl, setValue]);
 
   const steps = useMemo(
-    () => [
-      {
-        key: 'details',
-        label: __('pages/projects.steps.details'),
-        fields: ['name', 'activity_type', 'description'] as const,
-      },
-      {
-        key: 'links',
-        label: __('pages/projects.steps.links'),
-        fields: ['platform', 'project_url', 'success_url', 'fail_url', 'notify_url', 'logo'] as const,
-      },
-      {
-        key: 'currencies',
-        label: __('pages/projects.steps.currencies'),
-        fields: ['token_network_ids', 'accept'] as const,
-      },
-    ],
+    () =>
+      [
+        {
+          key: 'details',
+          label: __('pages/projects.steps.details'),
+          fields: ['name', 'activity_type', 'description'],
+        },
+        {
+          key: 'links',
+          label: __('pages/projects.steps.links'),
+          fields: ['platform', 'project_url', 'success_url', 'fail_url', 'notify_url', 'logo'],
+        },
+        {
+          key: 'currencies',
+          label: __('pages/projects.steps.currencies'),
+          fields: ['token_network_ids', 'accept'],
+        },
+      ] satisfies {
+        key: string;
+        label: string;
+        fields: (keyof ProjectFormValues)[];
+      }[],
     [__]
   );
 
@@ -144,7 +154,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
     const payload = {
       _token: csrfToken,
       ...data,
-      token_network_ids: data.token_network_ids.map((id) => Number(id)),
+      token_network_ids: data.token_network_ids.map((id: number | string) => Number(id)),
       auto_confirm_partial_by_amount: data.auto_confirm_partial_by_amount
         ? Number(data.auto_confirm_partial_by_amount)
         : null,
@@ -169,7 +179,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
 
   const handleNext = async () => {
     const currentFields = steps[activeStep]?.fields ?? [];
-    const isValid = await trigger(currentFields as unknown as string[]);
+    const isValid = await trigger(currentFields);
 
     if (isValid) {
       setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -239,7 +249,7 @@ export default function CreateProject({ tokenNetworks }: { tokenNetworks: TokenN
                     {activeStep === 2 && (
                       <CurrenciesStep
                         title={steps[2].label}
-                        tokenNetworks={tokenNetworks}
+                        tokenNetworks={normalizedTokenNetworks}
                         control={methods.control}
                         acceptLabel={__('pages/projects.form.accept_terms')}
                       />

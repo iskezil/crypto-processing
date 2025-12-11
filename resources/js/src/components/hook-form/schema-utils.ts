@@ -16,9 +16,9 @@ export const schemaUtils = {
   phoneNumber: (props?: { error?: SchemaErrorMessages; isValid?: (val: string) => boolean }) =>
     z
       .string()
-      .min(1, { error: props?.error?.required ?? 'Phone number is required!' })
-      .refine((val) => props?.isValid?.(val), {
-        error: props?.error?.invalid ?? 'Invalid phone number!',
+      .min(1, { message: props?.error?.required ?? 'Phone number is required!' })
+      .refine((val) => (props?.isValid ? props.isValid(val) : true), {
+        message: props?.error?.invalid ?? 'Invalid phone number!',
       }),
 
   /**
@@ -26,41 +26,34 @@ export const schemaUtils = {
    * Apply for email input.
    */
   email: (props?: { error?: SchemaErrorMessages }) =>
-    z.email({
-      error: ({ input, code }) =>
-        input && code.startsWith('invalid')
-          ? (props?.error?.invalid ?? 'Email must be a valid email address!')
-          : (props?.error?.required ?? 'Email is required!'),
-    }),
+    z
+      .string()
+      .min(1, { message: props?.error?.required ?? 'Email is required!' })
+      .email({ message: props?.error?.invalid ?? 'Email must be a valid email address!' }),
 
   /**
    * Date
    * Apply for date pickers.
    */
   date: (props?: { error?: SchemaErrorMessages }) =>
-    z.preprocess(
-      (val) => (val === undefined ? null : val), // Process input value before validation
-      z.union([z.string(), z.number(), z.date(), z.null()]).check((ctx) => {
-        const value = ctx.value;
-
-        if (value === null || value === '') {
-          ctx.issues.push({
+    z
+      .preprocess((val) => (val === undefined || val === '' ? null : val), z.union([z.string(), z.number(), z.date(), z.null()]))
+      .superRefine((value, ctx) => {
+        if (value === null) {
+          ctx.addIssue({
             code: 'custom',
             message: props?.error?.required ?? 'Date is required!',
-            input: value,
           });
           return;
         }
 
         if (!dayjs(value).isValid()) {
-          ctx.issues.push({
+          ctx.addIssue({
             code: 'custom',
             message: props?.error?.invalid ?? 'Invalid date!',
-            input: value,
           });
         }
-      })
-    ),
+      }),
 
   /**
    * Editor
@@ -72,7 +65,7 @@ export const schemaUtils = {
         const cleanedValue = val.trim();
         return cleanedValue !== '' && cleanedValue !== '<p></p>';
       },
-      { error: props?.error ?? 'Content is required!' }
+      { message: props?.error ?? 'Content is required!' }
     ),
 
   /**
@@ -81,7 +74,7 @@ export const schemaUtils = {
    */
   nullableInput: <T extends z.ZodTypeAny>(schema: T, options?: { error?: string }) =>
     schema.nullable().refine((val) => val !== null && val !== undefined, {
-      error: options?.error ?? 'Field is required!',
+      message: options?.error ?? 'Field is required!',
     }),
 
   /**
@@ -90,7 +83,7 @@ export const schemaUtils = {
    */
   boolean: (props?: { error?: string }) =>
     z.boolean().refine((val) => val === true, {
-      error: props?.error ?? 'Field is required!',
+      message: props?.error ?? 'Field is required!',
     }),
 
   /**
@@ -99,10 +92,10 @@ export const schemaUtils = {
    */
   sliderRange: (props: { error?: string; min: number; max: number }) =>
     z
-      .number()
-      .array()
+      .array(z.number())
+      .length(2)
       .refine((val) => val[0] >= props.min && val[1] <= props.max, {
-        error: props.error ?? `Range must be between ${props.min} and ${props.max}`,
+        message: props.error ?? `Range must be between ${props.min} and ${props.max}`,
       }),
 
   /**
@@ -111,16 +104,12 @@ export const schemaUtils = {
    */
   file: (props?: { error?: string }) =>
     z
-      .file()
-      .or(z.string())
-      .or(z.null())
-      .check((ctx) => {
-        const value = ctx.value;
-        if (!value || (typeof value === 'string' && !value.length)) {
-          ctx.issues.push({
+      .union([z.string(), z.null(), z.custom<File>((val) => val instanceof File)])
+      .superRefine((value, ctx) => {
+        if (!value || (typeof value === 'string' && value.length === 0)) {
+          ctx.addIssue({
             code: 'custom',
             message: props?.error ?? 'File is required!',
-            input: value,
           });
         }
       }),
@@ -130,8 +119,8 @@ export const schemaUtils = {
    */
   files: (props?: { error: string; minFiles?: number }) =>
     z
-      .array(z.union([z.string(), z.file()]))
-      .min(1, { error: props?.error ?? 'Files is required!' }),
+      .array(z.union([z.string(), z.custom<File>((val) => val instanceof File)]))
+      .min(props?.minFiles ?? 1, { message: props?.error ?? 'Files is required!' }),
 };
 
 // ----------------------------------------------------------------------
@@ -154,7 +143,7 @@ export function testCase<T extends z.ZodTypeAny>(schema: T, values: unknown[]) {
     const label = success
       ? color.green(`✅ Valid - ${serializedValue}`)
       : color.red(`❌ Error - ${serializedValue}`);
-    const payload = success ? data : z.treeifyError(error);
+    const payload = success ? data : error?.format();
 
     console.info(`${label} ${type}:`, JSON.stringify(payload, null, 2));
   });

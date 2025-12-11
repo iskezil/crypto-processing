@@ -41,19 +41,20 @@ export const usePaymentsAnalytics = (invoices: InvoiceRow[]) => {
     const totalCount = invoices.length;
     const calcPercent = (count: number) => (totalCount === 0 ? 0 : (count / totalCount) * 100);
 
+    const breakdown = analyticsStatuses.reduce(
+      (acc, key) => {
+        acc[key] = {
+          ...totals[key],
+          percent: calcPercent(totals[key].count),
+        };
+        return acc;
+      },
+      {} as PaymentsAnalytics,
+    );
+
     return {
-      ...totals,
+      ...breakdown,
       total: { ...totals.total, percent: totalCount ? 100 : 0 },
-      ...analyticsStatuses.reduce(
-        (acc, key) => {
-          acc[key] = {
-            ...totals[key],
-            percent: calcPercent(totals[key].count),
-          };
-          return acc;
-        },
-        { ...totals } as PaymentsAnalytics,
-      ),
     };
   }, [invoices]);
 

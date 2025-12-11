@@ -7,7 +7,7 @@ import { Controller, type Control } from 'react-hook-form';
 import type { ProjectFormValues } from '../../create/schema';
 
 type ServiceFeeFieldProps = {
-  __: (key: string, options?: Record<string, unknown>) => string;
+  __: (key: string, replaces?: Record<string, string | number> | string) => string;
   control: Control<ProjectFormValues>;
   error?: string;
 };

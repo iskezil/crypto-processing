@@ -7,6 +7,7 @@ import type {
   AutocompleteRenderValueGetItemProps,
 } from '@mui/material/Autocomplete';
 
+import type { HTMLAttributes } from 'react';
 import { useId, useMemo, useCallback } from 'react';
 
 import Chip from '@mui/material/Chip';
@@ -30,7 +31,7 @@ type FreeSolo = boolean | undefined;
 type ExcludedProps = 'options' | 'renderOption' | 'renderInput' | 'renderValue' | 'getOptionLabel';
 
 export type AutocompleteBaseProps = Omit<
-  AutocompleteProps<any, Multiple, DisableClearable, FreeSolo>,
+  AutocompleteProps<Value, Multiple, DisableClearable, FreeSolo>,
   ExcludedProps
 >;
 
@@ -82,12 +83,12 @@ export function CountrySelect({
   );
 
   const renderOption = useCallback(
-    (props: React.HTMLAttributes<HTMLLIElement> & { key: any }, option: Value) => {
-      const { key, ...otherProps } = props;
+    (props: HTMLAttributes<HTMLLIElement>, option: Value) => {
+      const { key, ...otherProps } = props as HTMLAttributes<HTMLLIElement> & { key?: React.Key };
       const country = getCountry(option);
 
       return (
-        <li key={key} {...otherProps}>
+        <li key={key ?? option} {...otherProps}>
           <FlagIcon
             code={country.code}
             sx={{
@@ -170,14 +171,14 @@ export function CountrySelect({
   );
 
   const renderValue = useCallback(
-    (selected: unknown, getItemProps: AutocompleteRenderValueGetItemProps<Multiple>) =>
-      (selected as Value[]).map((option, index) => {
+    (selected: Value[], getItemProps: AutocompleteRenderValueGetItemProps<true>) =>
+      selected.map((option, index) => {
         const country = getCountry(option);
 
         return (
           <Chip
             {...getItemProps({ index })}
-            key={country.label}
+            key={`${country.code}-${country.label}`}
             label={country.label}
             size="small"
             variant="soft"
@@ -201,7 +202,15 @@ export function CountrySelect({
       getOptionLabel={getOptionLabel}
       renderOption={renderOption}
       renderInput={renderInput}
-      renderValue={multiple ? renderValue : undefined}
+      renderValue={
+        multiple
+          ? (selected, getItemProps) =>
+              renderValue(
+                Array.isArray(selected) ? selected : [],
+                getItemProps as AutocompleteRenderValueGetItemProps<true>
+              )
+          : undefined
+      }
       {...slotProps}
       {...other}
     />

@@ -51,8 +51,7 @@ export default function List({ users, roles }: Props) {
   const { __ } = useLang();
   const { props } = usePage<PageProps>();
   const csrfToken = props.csrf_token;
-  console.log('props.auth.user', props.auth.user);
-  const authUserId = (props.auth.user as any)?.id as number | undefined;
+  const authUserId = props.auth.user?.id;
   const { can } = useAuthz();
   const canEdit = can('USERS_EDIT');
   const canDelete = can('USERS_DELETE');
@@ -77,15 +76,18 @@ export default function List({ users, roles }: Props) {
     setPage(0);
   };
 
-  const handleEditChange = (id: number, field: keyof User, value: any) => {
+  type EditableField = 'name' | 'email' | 'status' | 'roles';
+  type EditableValue = string | number | number[];
+
+  const handleEditChange = (id: number, field: EditableField, value: EditableValue) => {
     setUserList((prev) => prev.map((u) => (u.id === id ? { ...u, [field]: value } : u)));
   };
 
-  const handleSave = (id: number, field: keyof User, value?: any) => {
+  const handleSave = (id: number, field: EditableField, value?: EditableValue) => {
     const updated = userList.find((u) => u.id === id);
     const original = users.find((u) => u.id === id);
     if (!updated || !original) return;
-    const data: Record<string, any> = { _token: csrfToken };
+    const data: Partial<Pick<User, EditableField>> & { _token: string } = { _token: csrfToken };
     let changed = false;
     const revert = () => setUserList((prev) => prev.map((u) => (u.id === id ? original : u)));
     if (field === 'roles') {
@@ -103,14 +105,14 @@ export default function List({ users, roles }: Props) {
       const newStatus = value ?? updated.status;
       changed = newStatus !== original.status;
       if (changed) {
-        data.status = newStatus;
+        data.status = newStatus as string;
       }
     } else {
-      const newValue = value ?? (updated as any)[field];
-      const originalValue = (original as any)[field];
+      const newValue = (value ?? updated[field]) as User[EditableField];
+      const originalValue = original[field] as User[EditableField];
       changed = newValue !== originalValue;
       if (changed) {
-        data[field] = newValue;
+        data[field] = newValue as string;
       }
     }
     if (!changed) {

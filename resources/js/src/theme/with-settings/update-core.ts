@@ -1,4 +1,3 @@
-import type { ColorSystem } from '@mui/material/styles';
 import type { SettingsState } from 'src/components/settings';
 import type { ThemeOptions, ThemeColorScheme } from '../types';
 
@@ -30,33 +29,37 @@ export function applySettingsToTheme(
   const isDefaultContrast = contrast === 'default';
   const isDefaultPrimaryColor = primaryColor === 'default';
 
-  const lightPalette = theme.colorSchemes?.light?.palette as ColorSystem['palette'];
+  const lightPalette = theme.colorSchemes?.light?.palette;
 
   const primaryColorPalette = createPaletteChannel(primaryColorPresets[primaryColor]);
   // const secondaryColorPalette = createPaletteChannel(secondaryColorPresets[primaryColor]);
 
   const updateColorScheme = (schemeName: ThemeColorScheme) => {
-    const currentScheme = theme.colorSchemes?.[schemeName];
+    const baseScheme = (theme.colorSchemes?.[schemeName] ?? {}) as Record<string, unknown>;
+    const paletteBase = (baseScheme as { palette?: Record<string, unknown> }).palette ?? {};
+    const lightDefaultBg = lightPalette?.grey?.[200];
 
     const updatedPalette = {
-      ...currentScheme?.palette,
+      ...paletteBase,
       ...(!isDefaultPrimaryColor && {
         primary: primaryColorPalette,
         // secondary: secondaryColorPalette,
       }),
       ...(schemeName === 'light' && {
         background: {
-          ...lightPalette?.background,
-          ...(!isDefaultContrast && {
-            default: lightPalette.grey[200],
-            defaultChannel: hexToRgbChannel(lightPalette.grey[200]),
-          }),
+          ...(lightPalette?.background ?? {}),
+          ...(!isDefaultContrast && lightDefaultBg
+            ? {
+                default: lightDefaultBg,
+                defaultChannel: hexToRgbChannel(lightDefaultBg),
+              }
+            : {}),
         },
       }),
     };
 
     const updatedCustomShadows = {
-      ...currentScheme?.customShadows,
+      ...(baseScheme as { customShadows?: Record<string, unknown> }).customShadows ?? {},
       ...(!isDefaultPrimaryColor && {
         primary: createShadowColor(primaryColorPalette.mainChannel),
         // secondary: createShadowColor(secondaryColorPalette.mainChannel),
@@ -64,7 +67,7 @@ export function applySettingsToTheme(
     };
 
     return {
-      ...currentScheme,
+      ...baseScheme,
       palette: updatedPalette,
       customShadows: updatedCustomShadows,
     };

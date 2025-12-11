@@ -81,28 +81,34 @@ export function FiltersBar({
     </Stack>
   );
 
-  const handleProjectChange = (event: SelectChangeEvent<unknown>) => {
+  const handleProjectChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
-    const next: number[] =
-      typeof value === 'string'
-        ? value.split(',').map((v) => Number(v))
-        : (value as number[]);
+    const next: number[] = Array.isArray(value)
+      ? value.map((item) => Number(item))
+      : value.split(',').map((item) => Number(item));
     setFilter('project_id', next);
   };
 
-  const handleCurrencyChange = (event: SelectChangeEvent<unknown>) => {
+  const handleProjectSelectChange = (event: SelectChangeEvent<unknown>) =>
+    handleProjectChange(event as SelectChangeEvent<string[]>);
+
+  const handleCurrencyChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
-    const next: string[] =
-      typeof value === 'string' ? value.split(',') : (value as string[]);
+    const next: string[] = Array.isArray(value) ? value : value.split(',');
     setFilter('currency', next);
   };
 
-  const handleStatusChange = (event: SelectChangeEvent<unknown>) => {
+  const handleCurrencySelectChange = (event: SelectChangeEvent<unknown>) =>
+    handleCurrencyChange(event as SelectChangeEvent<string[]>);
+
+  const handleStatusChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
-    const next: string[] =
-      typeof value === 'string' ? value.split(',') : (value as string[]);
+    const next: string[] = Array.isArray(value) ? value : value.split(',');
     setFilter('status', next);
   };
+
+  const handleStatusSelectChange = (event: SelectChangeEvent<unknown>) =>
+    handleStatusChange(event as SelectChangeEvent<string[]>);
 
   return (
     <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} sx={{ p: 2 }}>
@@ -129,16 +135,14 @@ export function FiltersBar({
         placeholder={__('pages/payments.filters.project')}
         label={__('pages/payments.filters.project')}
         value={filters.project_id}
-        onChange={(event) =>
-          handleProjectChange(event as unknown as SelectChangeEvent<unknown>)
-        }
         size="small"
         sx={{ minWidth: { xs: '100%', md: 170 } }}
+        SelectProps={{
+          multiple: true,
+          onChange: handleProjectSelectChange,
+          renderValue: (selected) => renderProjectValues(selected as number[]),
+        }}
         slotProps={{
-          select: {
-            multiple: true,
-            renderValue: (selected) => renderProjectValues(selected as number[]),
-          },
           input: {
             startAdornment: (
               <InputAdornment position="start">
@@ -160,16 +164,14 @@ export function FiltersBar({
         placeholder={__('pages/payments.filters.currency')}
         label={__('pages/payments.filters.currency')}
         value={filters.currency}
-        onChange={(event) =>
-          handleCurrencyChange(event as unknown as SelectChangeEvent<unknown>)
-        }
         size="small"
         sx={{ minWidth: { xs: '100%', md: 190 } }}
+        SelectProps={{
+          multiple: true,
+          onChange: handleCurrencySelectChange,
+          renderValue: (selected) => renderCurrencyValues(selected as string[]),
+        }}
         slotProps={{
-          select: {
-            multiple: true,
-            renderValue: (selected) => renderCurrencyValues(selected as string[]),
-          },
           input: {
             startAdornment: (
               <InputAdornment position="start">
@@ -205,16 +207,14 @@ export function FiltersBar({
         placeholder={__('pages/payments.filters.status')}
         label={__('pages/payments.filters.status')}
         value={filters.status}
-        onChange={(event) =>
-          handleStatusChange(event as unknown as SelectChangeEvent<unknown>)
-        }
         size="small"
         sx={{ minWidth: { xs: '100%', md: 190 } }}
+        SelectProps={{
+          multiple: true,
+          onChange: handleStatusSelectChange,
+          renderValue: (selected) => renderStatusValues(selected as string[]),
+        }}
         slotProps={{
-          select: {
-            multiple: true,
-            renderValue: (selected) => renderStatusValues(selected as string[]),
-          },
           input: {
             startAdornment: (
               <InputAdornment position="start">

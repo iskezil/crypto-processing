@@ -52,16 +52,21 @@ const ICONS = {
 // ----------------------------------------------------------------------
 
 type ProjectsModerationStats = { pending?: number; approved?: number; rejected?: number } | null;
+type NavProjectMenuItem = { name: string; ulid: string; status?: string };
+type NavPageProps = PageProps & {
+  projectsMenu?: NavProjectMenuItem[];
+  projectsModerationStats?: ProjectsModerationStats;
+};
 
 export function useNavData(): NavSectionProps['data'] {
   const { __ } = useLang();
   const { can, canAny } = useAuthz();
-  const { props } = usePage<PageProps & { projectsMenu: any[]; projectsModerationStats: ProjectsModerationStats }>();
+  const { props } = usePage<NavPageProps>();
 
-  const projectsMenu = (props.projectsMenu || []).map((project) => ({
+  const projectsMenu = (props.projectsMenu ?? []).map((project) => ({
     title: project.name,
     path: route('projects.show', project.ulid, false),
-    status: project.status,
+    status: project.status ?? 'pending',
   }));
 
   const projectStatusColor: Record<string, 'warning' | 'info' | 'error'> = {
@@ -195,15 +200,17 @@ export function useNavData(): NavSectionProps['data'] {
       },
     ];
 
-    const filterItems = (items: any[]): any[] =>
+    const filterItems = (items: NavSectionProps['data'][number]['items']):
+      NavSectionProps['data'][number]['items'] =>
       items
+        .map((item) => ({
+          ...item,
+          ...(item.children && { children: filterItems(item.children) }),
+        }))
         .filter((item) => {
           if (item.permission && !can(item.permission)) return false;
           if (item.anyOf && !canAny(item.anyOf)) return false;
-          if (item.children) {
-            item.children = filterItems(item.children);
-            if (item.children.length === 0) return false;
-          }
+          if (item.children && item.children.length === 0) return false;
           return true;
         });
 

@@ -9,6 +9,7 @@ import { Controller, type Control } from 'react-hook-form';
 import { Iconify } from 'src/components/iconify';
 import { Field } from 'src/components/hook-form';
 import { TokenNetworkAvatar } from 'src/pages/dashboard/projects/components';
+import type { ProjectFormValues } from '../../create/schema';
 
 import { FormRow } from './FormRow';
 
@@ -16,14 +17,14 @@ type TokenNetwork = {
   id: number;
   full_code: string;
   stable_coin: boolean;
-  token?: { name: string; code: string; icon_path?: string; icon_url?: string };
-  network?: { name: string; code: string; icon_path?: string; icon_url?: string; network?: string };
+  token?: { name?: string; code?: string; icon_path?: string; icon_url?: string };
+  network?: { name?: string; code?: string; icon_path?: string; icon_url?: string; network?: string };
 };
 
 type CurrenciesStepProps = {
   title: string;
   acceptLabel: string;
-  control: Control<any>;
+  control: Control<ProjectFormValues>;
   tokenNetworks: TokenNetwork[];
 };
 

@@ -14,13 +14,14 @@ import { allIconNames, registerIcons } from './register-icons';
 
 export type IconifyProps = React.ComponentProps<typeof IconRoot> &
   Omit<IconProps, 'icon'> & {
-    icon: IconifyName;
+    icon: IconifyName | string;
   };
 
 export function Iconify({ className, icon, width = 20, height, sx, ...other }: IconifyProps) {
   const uniqueId = useId();
+  const iconName = typeof icon === 'string' ? icon : undefined;
 
-  if (!allIconNames.includes(icon)) {
+  if (iconName && !allIconNames.includes(iconName as IconifyName)) {
     console.warn(
       [
         `Icon "${icon}" is currently loaded online, which may cause flickering effects.`,

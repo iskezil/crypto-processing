@@ -5,7 +5,7 @@ import { varAlpha } from 'minimal-shared/utils';
 import { useBoolean } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
-import { Link } from '@inertiajs/react';
+import Link from '@mui/material/Link';
 import Avatar from '@mui/material/Avatar';
 import Drawer from '@mui/material/Drawer';
 import Tooltip from '@mui/material/Tooltip';
@@ -51,8 +51,13 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
       auth: { user },
     },
   } = usePage<PageProps>();
+  if (!user) {
+    return null;
+  }
 
-  const avatarUrl = `${CONFIG.assetsDir}/${user.avatar}`;
+  const avatarUrl = `${CONFIG.assetsDir}/${user.avatar ?? ''}`;
+  const displayName = user.name ?? '';
+  const initials = displayName ? displayName.charAt(0).toUpperCase() : '';
 
   const { value: open, onFalse: onClose, onTrue: onOpen } = useBoolean();
 
@@ -63,8 +68,8 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
         primaryBorder: { size: 120, sx: { color: 'primary.main' } },
       }}
     >
-      <Avatar src={avatarUrl} alt={user.name} sx={{ width: 1, height: 1 }}>
-        {user.name.charAt(0).toUpperCase()}
+      <Avatar src={avatarUrl} alt={displayName} sx={{ width: 1, height: 1 }}>
+        {initials}
       </Avatar>
     </AnimateBorder>
   );
@@ -130,7 +135,7 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
       <AccountButton
         onClick={onOpen}
         photoURL={avatarUrl}
-        displayName={user.name}
+        displayName={displayName}
         sx={sx}
         {...other}
       />
@@ -168,11 +173,11 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
             {renderAvatar()}
 
             <Typography variant="subtitle1" noWrap sx={{ mt: 2 }}>
-            {user.name}
+              {displayName}
             </Typography>
 
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }} noWrap>
-            {user.email}
+              {user.email}
             </Typography>
           </Box>
 
