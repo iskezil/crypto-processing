@@ -71,5 +71,6 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         'sync.lang' => \App\Http\Middleware\SyncLangFiles::class,
+        'validate.api.token' => \App\Http\Middleware\ValidateApiToken::class,
     ];
 }

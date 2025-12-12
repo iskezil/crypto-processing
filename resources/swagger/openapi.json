@@ -1,0 +1,146 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Crypto Processing API",
+    "version": "v1"
+  },
+  "servers": [
+    {"url": "http://localhost"}
+  ],
+  "components": {
+    "securitySchemes": {
+      "sanctum": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Token"
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/invoice/merchant/create": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Create invoice",
+        "security": [{"sanctum": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["shop_id", "amount"],
+                "properties": {
+                  "shop_id": {"type": "string", "example": "01JABCDEF1234567890"},
+                  "amount": {"type": "number", "format": "float", "example": 100.5},
+                  "currency": {"type": "string", "example": "USD"},
+                  "is_email_required": {"type": "boolean", "example": false},
+                  "test_mode": {"type": "boolean", "example": false},
+                  "time_to_pay": {
+                    "type": "object",
+                    "properties": {
+                      "hours": {"type": "integer", "example": 24},
+                      "minutes": {"type": "integer", "example": 0}
+                    }
+                  },
+                  "order_id": {"type": "string", "example": "ORDER-123"},
+                  "metadata": {"type": "object", "example": {"customer_id": "123", "comment": "Any data"}}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "example": {"status": "success", "result": {"uuid": "INV-01JABCDEF1234567890", "ulid": "01JABCDEF1234567890", "project_id": 12, "amount": "100.50000000", "amount_usd": "100.50000000", "fiat_currency": "USD", "status": "created", "side_commission": "client", "side_commission_cc": "client", "is_email_required": false, "test_mode": false, "expiry_date": "2025-12-11T12:00:00Z", "external_order_id": "ORDER-123", "metadata": {"customer_id": "123", "comment": "Any data"}, "created_at": "2025-12-11T10:00:00Z", "updated_at": "2025-12-11T10:00:00Z"}}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/invoice/merchant/canceled": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Cancel invoice",
+        "security": [{"sanctum": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ulid"],
+                "properties": {"ulid": {"type": "string", "example": "INV-01JABCDEF1234567890"}}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Canceled", "content": {"application/json": {"example": {"status": "success", "result": ["ok"]}}}},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/invoice/merchant/list": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "List invoices",
+        "security": [{"sanctum": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["start", "end"],
+                "properties": {
+                  "start": {"type": "string", "example": "01.01.2023"},
+                  "end": {"type": "string", "example": "31.01.2023"},
+                  "store_id": {"type": "string", "example": "01JABCDEF1234567890"},
+                  "offset": {"type": "integer", "example": 0},
+                  "limit": {"type": "integer", "example": 50}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Invoice list", "content": {"application/json": {"example": {"status": "success", "result": [{"uuid": "INV-01JABCDEF1234567890", "ulid": "01JABCDEF1234567890", "created": "2023-01-01 12:00:00", "expiry_date": "2023-01-02 12:00:00", "status": "created", "side_commission": "client", "side_commission_cc": "client", "is_email_required": false, "test_mode": false, "amount": 100, "amount_usd": 100, "paid_amount": 0, "credited_amount": 0, "credited_amount_usd": 0, "service_fee": 0, "service_fee_usd": 0, "transfer_fee": 0, "fiat_currency": "USD", "external_order_id": "1111", "tx_ids": null, "project": {"id": 1, "name": "My store", "fail": "https://test.com/fail?order_id=1111&invoice_uuid=INV-01JABCDEF1234567890", "success": "https://test.com/success?order_id=1111&invoice_uuid=INV-01JABCDEF1234567890", "logo": null}, "token_network": {"id": 4, "code": "USDT_TRC20", "name": "USDT on TRC20"}}], "all_count": 1}}}},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/invoice/merchant/info": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Invoice info",
+        "security": [{"sanctum": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["uuids"],
+                "properties": {"uuids": {"type": "array", "items": {"type": "string"}}}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Invoices info", "content": {"application/json": {"example": {"status": "success", "result": [{"uuid": "INV-01JABCDEF1234567890", "ulid": "01JABCDEF1234567890", "expiry_date": "2023-01-01 12:00:00", "side_commission": "client", "side_commission_cc": "client", "amount": 100.2, "amount_usd": 100.2, "received": 100.2, "received_usd": 100.2, "fee": 1.4, "fee_usd": 1.4, "service_fee": 0, "service_fee_usd": 1.9, "status": "overpaid", "order_id": "1111", "fiat_currency": "USD", "project": {"id": 1, "name": "MyStore", "fail": "https://test.com?order_id=1111&invoice_uuid=INV-01JABCDEF1234567890", "success": "https://test.com?order_id=1111&invoice_uuid=INV-01JABCDEF1234567890", "logo": null}, "token_network": {"id": 4, "code": "USDT_TRC20", "name": "USDT on TRC20"}, "test_mode": false}]}}}},
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Not found"},
+          "422": {"description": "Validation error"}
+        }
+      }
+    }
+  }
+}

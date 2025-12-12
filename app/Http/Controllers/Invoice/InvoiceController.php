@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\TokenNetwork;
+use App\Services\InvoiceService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -15,10 +16,11 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller
 {
-    public function __construct()
+    public function __construct(private readonly InvoiceService $invoiceService)
     {
         $this->middleware('permission:PAYMENTS_VIEW')->only(['index', 'export', 'show']);
         $this->middleware('permission:PAYMENTS_ADMIN_VIEW')->only(['adminIndex', 'adminExport', 'adminShow']);
@@ -62,12 +64,11 @@ class InvoiceController extends Controller
             abort(403);
         }
 
-        if ($invoice->status !== 'created') {
+        try {
+            $this->invoiceService->cancelInvoiceModel($invoice, $user, (bool) $user?->can('PAYMENTS_ADMIN_VIEW'));
+        } catch (ValidationException $exception) {
             return back()->with('error', __('pages/payments.errors.cannot_cancel'));
         }
-
-        $invoice->status = 'canceled';
-        $invoice->save();
 
         return back()->with('success', __('pages/payments.notifications.canceled'));
     }

@@ -2,11 +2,17 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -34,6 +40,10 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $e)
     {
+        if ($request->is('api/*')) {
+            return $this->renderApiException($request, $e);
+        }
+
         // В режиме отладки и для JSON-запросов используем стандартный вывод Laravel
         if ($request->expectsJson() || $request->wantsJson() || config('app.debug')) {
             return parent::render($request, $e);
@@ -82,5 +92,44 @@ class Handler extends ExceptionHandler
         return Inertia::render($page)
             ->toResponse($request)
             ->setStatusCode($statusCode);
+    }
+
+    private function renderApiException($request, Throwable $e)
+    {
+        if ($e instanceof HttpResponseException) {
+            return $e->getResponse();
+        }
+
+        if ($e instanceof AuthenticationException || $e instanceof UnauthorizedHttpException) {
+            return $this->apiErrorResponse('Unauthenticated', Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($e instanceof ValidationException) {
+            $first = collect($e->errors())->flatten()->first() ?: 'Validation error';
+
+            return $this->apiErrorResponse($first, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if ($e instanceof ModelNotFoundException) {
+            return $this->apiErrorResponse('Not found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($e instanceof HttpExceptionInterface) {
+            $message = $e->getMessage() ?: Response::$statusTexts[$e->getStatusCode()] ?? 'Http error';
+
+            return $this->apiErrorResponse($message, $e->getStatusCode());
+        }
+
+        return $this->apiErrorResponse('Server error', Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    private function apiErrorResponse(string $message, int $status)
+    {
+        return response()->json([
+            'status' => 'error',
+            'result' => [
+                'validate_error' => $message,
+            ],
+        ], $status);
     }
 }
