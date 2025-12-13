@@ -17,3 +17,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+/crypto-payments-backend/dist/
+/crypto-payments-backend/node_modules/
+/crypto-payments-backend/.env
